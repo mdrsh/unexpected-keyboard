@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<row height="0.75">
+<row height="0.75" number_row="true">
   <key role="action" key0="1"/>
   <key role="action" key0="2"/>
   <key role="action" key0="3"/>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- See [number_row_no_symbols.xml] for the number row with no symbols. -->
-<row height="0.75">
+<row height="0.75" number_row="true">
   <key role="action" key0="1" se="!"/>
   <key role="action" key0="2" se="@"/>
   <key role="action" key0="3" se="#"/>

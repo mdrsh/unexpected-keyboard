@@ -266,6 +266,8 @@ public final class KeyboardData
           throw error(parser, "Expecting tag <row>, got <" + parser.getName() + ">");
       }
     }
+    if (embedded_number_row && rows.size() > 0 && !rows.get(0).is_number_row)
+      rows.set(0, rows.get(0).with_number_row(true));
     float kw = (specified_kw != 0f) ? specified_kw : compute_max_width(rows);
     return new KeyboardData(rows, kw, modmap, script, numpad_script, name, bottom_row, embedded_number_row, locale_extra_keys);
   }
@@ -320,8 +322,9 @@ public final class KeyboardData
     public final float shift;
     /** Total width of the row. */
     public final float keysWidth;
+    public final boolean is_number_row;
 
-    protected Row(List<Key> keys_, float h, float s)
+    protected Row(List<Key> keys_, float h, float s, boolean is_number_row_)
     {
       float kw = 0.f;
       for (Key k : keys_) kw += k.width + k.shift;
@@ -329,6 +332,12 @@ public final class KeyboardData
       height = Math.max(h, keys_.size() == 0 ? 0.0f : 0.5f);
       shift = Math.max(s, 0f);
       keysWidth = kw;
+      is_number_row = is_number_row_;
+    }
+
+    protected Row(List<Key> keys_, float h, float s)
+    {
+      this(keys_, h, s, false);
     }
 
     public static Row parse(XmlPullParser parser) throws Exception
@@ -338,9 +347,10 @@ public final class KeyboardData
       float h = attribute_float(parser, "height", 1f);
       float shift = attribute_float(parser, "shift", 0f);
       float scale = attribute_float(parser, "scale", 0f);
+      boolean is_number_row = attribute_bool(parser, "number_row", false);
       while (expect_tag(parser, "key"))
         keys.add(Key.parse(parser));
-      Row row = new Row(keys, h, shift);
+      Row row = new Row(keys, h, shift, is_number_row);
       if (scale > 0f)
         row = row.updateWidth(scale);
       return row;
@@ -355,12 +365,17 @@ public final class KeyboardData
         should be immutable. */
     public Row with_keys(List<Key> keys)
     {
-      return new Row(keys, height, shift);
+      return new Row(keys, height, shift, is_number_row);
     }
 
     public Row with_height(float h)
     {
-      return new Row(keys, h, shift);
+      return new Row(keys, h, shift, is_number_row);
+    }
+
+    public Row with_number_row(boolean is_num)
+    {
+      return new Row(keys, height, shift, is_num);
     }
 
     public void getKeys(Map<KeyValue, KeyPos> dst, int row)
