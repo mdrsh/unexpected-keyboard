@@ -133,4 +133,6 @@
     <string name="pref_change_method_key_replacement_e_picker">Toon invoermethodekiezer (lang indrukken)</string>
     <string name="pref_change_method_key_replacement_e_prev">Schakelen naar laatst gebruikt</string>
     <string name="pref_change_method_key_replacement_e_next">Schakelen naar volgende in de lijst</string>
+    <string name="pref_suggestions_height_title">Hoogte suggestiebalk</string>
+    <string name="pref_bottom_row_height_title">Hoogte spatiebalkrij</string>
 </resources>

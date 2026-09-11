@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">Připnout</string>
     <string name="clipboard_remove_confirm">Odebrat ze schránky?</string>
     <string name="clipboard_remove_confirmed">Ano</string>
+    <string name="pref_suggestions_height_title">Výška lišty návrhů</string>
+    <string name="pref_bottom_row_height_title">Výška řádku s mezerníkem</string>
 </resources>

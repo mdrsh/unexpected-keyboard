@@ -168,4 +168,6 @@
     <string name="pref_split_layout_never">Nigdy</string>
     <string name="pref_split_layout_landscape">W orientacji poziomej</string>
     <string name="pref_split_layout_wide">Na szerokich ekranach</string>
+    <string name="pref_suggestions_height_title">Wysokość paska sugestii</string>
+    <string name="pref_bottom_row_height_title">Wysokość rzędu spacji</string>
 </resources>

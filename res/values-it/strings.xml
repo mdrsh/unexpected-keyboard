@@ -168,4 +168,6 @@
     <string name="pref_split_layout_never">Mai</string>
     <string name="pref_split_layout_landscape">In orizzontale</string>
     <string name="pref_dialog_edit_text">Definizione personalizzata</string>
+    <string name="pref_suggestions_height_title">Altezza barra dei suggerimenti</string>
+    <string name="pref_bottom_row_height_title">Altezza riga barra spaziatrice</string>
 </resources>

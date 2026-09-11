@@ -170,4 +170,6 @@
     <string name="dictionaries_download_failed">Allalaadimine ei õnnestunud: palun luba internetiühenduse kasutamine</string>
     <string name="pref_theme_e_dracula">Dracula</string>
     <string name="dictionary_switcher_title">Vaheta keelt</string>
+    <string name="pref_suggestions_height_title">Soovitusriba kõrgus</string>
+    <string name="pref_bottom_row_height_title">Tühikuklahvi rea kõrgus</string>
 </resources>

@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">Sabitlendi</string>
     <string name="clipboard_remove_confirm">Bu panodan silinsin mi?</string>
     <string name="clipboard_remove_confirmed">Evet</string>
+    <string name="pref_suggestions_height_title">Öneri çubuğu yüksekliği</string>
+    <string name="pref_bottom_row_height_title">Boşluk tuşu satırı yüksekliği</string>
 </resources>

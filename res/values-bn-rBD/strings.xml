@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">পিন করা</string>
     <string name="clipboard_remove_confirm">এই ক্লিপবোর্ডটি সরাবেন?</string>
     <string name="clipboard_remove_confirmed">হ্যা</string>
+    <string name="pref_suggestions_height_title">পরামর্শ বারের উচ্চতা</string>
+    <string name="pref_bottom_row_height_title">স্পেস বার সারির উচ্চতা</string>
 </resources>

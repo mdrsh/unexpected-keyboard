@@ -112,4 +112,6 @@
     <string name="clipboard_pin_heading">お気に入り</string>
     <string name="clipboard_remove_confirm">クリップボードから削除しますか?</string>
     <string name="clipboard_remove_confirmed">はい</string>
+    <string name="pref_suggestions_height_title">候補バーの高さ</string>
+    <string name="pref_bottom_row_height_title">スペースバー行の高さ</string>
 </resources>

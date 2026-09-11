@@ -164,4 +164,6 @@
     <string name="pref_split_layout_never">Không bao giờ</string>
     <string name="pref_split_layout_landscape">Trong chế độ màn hình ngang</string>
     <string name="pref_split_layout_wide">Trên màn hình rộng</string>
+    <string name="pref_suggestions_height_title">Chiều cao thanh đề xuất</string>
+    <string name="pref_bottom_row_height_title">Chiều cao hàng phím cách</string>
 </resources>

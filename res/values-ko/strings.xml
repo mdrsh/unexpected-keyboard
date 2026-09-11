@@ -113,4 +113,6 @@
     <string name="clipboard_pin_heading">고정</string>
     <string name="clipboard_remove_confirm">이 클립보드를 제거하시겠습니까?</string>
     <string name="clipboard_remove_confirmed">예</string>
+    <string name="pref_suggestions_height_title">추천 단어 표시줄 높이</string>
+    <string name="pref_bottom_row_height_title">스페이스바 줄 높이</string>
 </resources>

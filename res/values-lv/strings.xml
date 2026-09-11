@@ -170,4 +170,6 @@
     <string name="dictionary_switcher_title">Mainīt valodu</string>
     <string name="pref_theme_e_dracula">Drakula</string>
     <string name="dictionaries_download_failed">Lejupielāde neizdevās: lūgums atļaut piekļuvi internetam</string>
+    <string name="pref_suggestions_height_title">Ieteikumu joslas augstums</string>
+    <string name="pref_bottom_row_height_title">Atstarpes taustiņa rindas augstums</string>
 </resources>

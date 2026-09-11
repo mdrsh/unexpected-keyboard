@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">ပင်ထိုးထားခဲ့သည်</string>
     <string name="clipboard_remove_confirm">ယခု ကလစ်ဘုတ်ကို ပယ်ဖျက်လိုပါသလား?</string>
     <string name="clipboard_remove_confirmed">ဟုတ်ကဲ့</string>
+    <string name="pref_suggestions_height_title">အကြံပြုချက်ဘားအမြင့်</string>
+    <string name="pref_bottom_row_height_title">စပေ့စ်ဘားအတန်းအမြင့်</string>
 </resources>

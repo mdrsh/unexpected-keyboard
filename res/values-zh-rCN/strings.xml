@@ -167,4 +167,6 @@
     <string name="pref_theme_e_epaperblack">电子墨黑</string>
     <string name="pref_split_layout_landscape">横屏模式下</string>
     <string name="pref_split_layout">分体布局</string>
+    <string name="pref_suggestions_height_title">建议栏高度</string>
+    <string name="pref_bottom_row_height_title">空格键行高度</string>
 </resources>

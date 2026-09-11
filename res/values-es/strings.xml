@@ -170,4 +170,6 @@
     <string name="dictionaries_download_failed">Error de descarga: Por favor, permite el acceso a Internet</string>
     <string name="dictionary_switcher_title">Cambiar idioma</string>
     <string name="pref_theme_e_dracula">Drácula</string>
+    <string name="pref_suggestions_height_title">Altura de la barra de sugerencias</string>
+    <string name="pref_bottom_row_height_title">Altura de la fila de la barra espaciadora</string>
 </resources>

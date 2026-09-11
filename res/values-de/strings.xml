@@ -170,4 +170,6 @@
     <string name="dictionaries_download_failed">Download fehlgeschlagen: Bitte Internetzugriff erlauben</string>
     <string name="pref_theme_e_dracula">Dracula</string>
     <string name="dictionary_switcher_title">Sprache ändern</string>
+    <string name="pref_suggestions_height_title">Höhe der Vorschlagsleiste</string>
+    <string name="pref_bottom_row_height_title">Höhe der Leertasten-Zeile</string>
 </resources>

@@ -170,4 +170,6 @@
     <string name="dictionaries_download_failed">Ошибка загрузки: разрешите доступ к интернету</string>
     <string name="dictionary_switcher_title">Изменить язык</string>
     <string name="pref_theme_e_dracula">Дракула</string>
+    <string name="pref_suggestions_height_title">Высота полосы подсказок</string>
+    <string name="pref_bottom_row_height_title">Высота строки с пробелом</string>
 </resources>

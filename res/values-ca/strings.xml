@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">Fixat</string>
     <string name="clipboard_remove_confirm">Voleu eliminar-ho del porta-retalls?</string>
     <string name="clipboard_remove_confirmed">Sí</string>
+    <string name="pref_suggestions_height_title">Alçada de la barra de suggeriments</string>
+    <string name="pref_bottom_row_height_title">Alçada de la fila de la barra d\'espai</string>
 </resources>

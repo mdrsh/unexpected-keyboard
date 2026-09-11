@@ -168,4 +168,6 @@
     <string name="pref_split_layout_never">Nunca</string>
     <string name="pref_split_layout_landscape">Na orientação paisagem</string>
     <string name="pref_split_layout_wide">Em telas largas</string>
+    <string name="pref_suggestions_height_title">Altura da barra de sugestões</string>
+    <string name="pref_bottom_row_height_title">Altura da linha da barra de espaço</string>
 </resources>

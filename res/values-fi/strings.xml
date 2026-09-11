@@ -1,3 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pref_suggestions_height_title">Ehdotuspalkin korkeus</string>
+    <string name="pref_bottom_row_height_title">Välilyöntirivin korkeus</string>
 </resources>

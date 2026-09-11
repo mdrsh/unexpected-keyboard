@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">Nakapin</string>
     <string name="clipboard_remove_confirm">Tanggalin ito sa clipboard?</string>
     <string name="clipboard_remove_confirmed">Oo</string>
+    <string name="pref_suggestions_height_title">Taas ng bar ng mungkahi</string>
+    <string name="pref_bottom_row_height_title">Taas ng hilera ng space bar</string>
 </resources>

@@ -170,4 +170,6 @@
     <string name="pref_split_layout_never">இல்லவே இல்லை</string>
     <string name="pref_split_layout_landscape">கிடைமட்ட திசை அமைப்பு</string>
     <string name="pref_split_layout_wide">அகலத் திரைகளில்</string>
+    <string name="pref_suggestions_height_title">பரிந்துரை பட்டையின் உயரம்</string>
+    <string name="pref_bottom_row_height_title">இடைவெளி விசை வரிசையின் உயரம்</string>
 </resources>

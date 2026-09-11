@@ -123,4 +123,6 @@
     <string name="pref_show_number_row_no_symbols">แถวตัวเลขแบบไม่มีสัญลักษณ์</string>
     <string name="pref_show_number_row_symbols">แถวตัวเลขแบบมีสัญลักษณ์</string>
     <string name="key_descr_forward_delete_word">ลบคำด้านขวา</string>
+    <string name="pref_suggestions_height_title">ความสูงแถบคำแนะนำ</string>
+    <string name="pref_bottom_row_height_title">ความสูงแถวสเปซบาร์</string>
 </resources>

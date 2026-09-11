@@ -170,4 +170,6 @@
     <string name="pref_split_layout_never">Jangan pernah</string>
     <string name="pref_split_layout_landscape">Pada orientasi landscape</string>
     <string name="pref_split_layout_wide">Pada layar lebar</string>
+    <string name="pref_suggestions_height_title">Tinggi bilah saran</string>
+    <string name="pref_bottom_row_height_title">Tinggi baris tombol spasi</string>
 </resources>

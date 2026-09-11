@@ -119,4 +119,6 @@
     <string name="clipboard_pin_heading">مثبّت</string>
     <string name="clipboard_remove_confirm">هل إنت متأكّد إنّك تبغى تمسح هذه الحافظة؟</string>
     <string name="clipboard_remove_confirmed">إيه</string>
+    <string name="pref_suggestions_height_title">ارتفاع شريط الاقتراحات</string>
+    <string name="pref_bottom_row_height_title">ارتفاع صف مفتاح المسافة</string>
 </resources>
