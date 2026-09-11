@@ -653,7 +653,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "change_method": return CHANGE_METHOD;
       case "change_method_prev": return CHANGE_METHOD_PREV;
       case "change_method_next": return CHANGE_METHOD_NEXT;
-      case "action": return eventKey("Action", Event.ACTION, FLAG_SMALLER_FONT); // Will always be replaced
+      case "action": return eventKey("action", Event.ACTION, FLAG_SMALLER_FONT); // Will always be replaced
       case "capslock": return eventKey(0xE012, Event.CAPS_LOCK, 0);
       case "voice_typing": return eventKey(0xE015, Event.SWITCH_VOICE_TYPING, FLAG_SMALLER_FONT);
       case "voice_typing_chooser": return VOICE_TYPING_CHOOSER;
@@ -760,7 +760,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "cursor_right": return sliderKey(Slider.Cursor_right, 1);
       case "cursor_up": return sliderKey(Slider.Cursor_up, 1);
       case "cursor_down": return sliderKey(Slider.Cursor_down, 1);
-      case "selection_cancel": return editingKey("Esc", Editing.SELECTION_CANCEL, FLAG_SMALLER_FONT | FLAG_SPECIAL);
+      case "selection_cancel": return editingKey("esc", Editing.SELECTION_CANCEL, FLAG_SMALLER_FONT | FLAG_SPECIAL);
       case "selection_cursor_left": return sliderKey(Slider.Selection_cursor_left, -1); // Move the left side of the selection
       case "selection_cursor_right": return sliderKey(Slider.Selection_cursor_right, 1);
       // These keys are not used

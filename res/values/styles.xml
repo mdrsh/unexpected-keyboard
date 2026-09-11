@@ -21,6 +21,9 @@
     <item name="android:textColor">?attr/colorLabel</item>
     <item name="android:maxLines">1</item>
   </style>
+  <style name="candidates_item_middle" parent="candidates_item">
+    <item name="android:textColor">?attr/suggestions_selected_text_color</item>
+  </style>
   <style name="candidates_emoji">
     <item name="android:layout_width">@dimen/candidates_emoji_width</item>
     <item name="android:layout_height">@dimen/candidates_emoji_width</item>

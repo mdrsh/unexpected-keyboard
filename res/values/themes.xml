@@ -18,6 +18,7 @@
     <attr name="colorLabelPressed" format="color"/> <!-- defaults to colorLabel -->
     <attr name="colorLabelActivated" format="color"/>
     <attr name="colorLabelLocked" format="color"/>
+    <attr name="colorLabelAction" format="color"/>
     <attr name="secondaryDimming" format="float"/>
     <attr name="greyedDimming" format="float"/>
     <!-- Corner labels -->
@@ -47,6 +48,7 @@
     <!-- Suggestions -->
     <attr name="suggestions_background" format="color"/>
     <attr name="suggestions_border_radius" format="dimension"/>
+    <attr name="suggestions_selected_text_color" format="color"/>
   </declare-styleable>
   <style name="BaseTheme">
     <item name="android:forceDarkAllowed">false</item>
@@ -65,7 +67,9 @@
     <item name="clipboard_divider_height">1px</item>
     <item name="suggestions_background">?attr/colorKeyboard</item>
     <item name="suggestions_border_radius">?attr/keyBorderRadius</item>
+    <item name="suggestions_selected_text_color">?attr/colorLabelAction</item>
     <item name="colorSubLabelNumberRow">?attr/colorSubLabel</item>
+    <item name="colorLabelAction">?attr/colorLabel</item>
   </style>
   <style name="Dark" parent="BaseTheme">
     <item name="android:isLightTheme">false</item>

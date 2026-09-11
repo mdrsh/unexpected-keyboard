@@ -3,7 +3,7 @@
   <juloo.keyboard2.suggestions.CandidatesView android:id="@+id/candidates_view" style="@style/candidates_view">
     <TextView android:id="@+id/candidates_emoji" style="@style/candidates_emoji"/>
     <TextView android:id="@+id/candidates_left" style="@style/candidates_item"/>
-    <TextView android:id="@+id/candidates_middle" style="@style/candidates_item"/>
+    <TextView android:id="@+id/candidates_middle" style="@style/candidates_item_middle"/>
     <TextView android:id="@+id/candidates_right" style="@style/candidates_item"/>
     <TextView android:id="@+id/candidates_lang_name" style="@style/candidates_lang_name"/>
     <Button android:id="@+id/dictionary_switch" style="@style/change_dictionary"/>

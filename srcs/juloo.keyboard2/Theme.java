@@ -31,6 +31,8 @@ public class Theme
   public final int subLabelNumberRowColor;
   public final int secondaryLabelColor;
   public final int greyedLabelColor;
+  public final boolean hasActionLabelColor;
+  public final int actionLabelColor;
 
   // Key borders
   public final float keyBorderRadius;
@@ -66,6 +68,8 @@ public class Theme
     lockedColor = s.getColor(R.styleable.keyboard_colorLabelLocked, 0);
     subLabelColor = s.getColor(R.styleable.keyboard_colorSubLabel, 0);
     subLabelNumberRowColor = s.getColor(R.styleable.keyboard_colorSubLabelNumberRow, subLabelColor);
+    hasActionLabelColor = s.hasValue(R.styleable.keyboard_colorLabelAction);
+    actionLabelColor = s.getColor(R.styleable.keyboard_colorLabelAction, labelColor);
     secondaryLabelColor = adjustLight(labelColor,
         s.getFloat(R.styleable.keyboard_secondaryDimming, 0.25f));
     greyedLabelColor = adjustLight(labelColor,

@@ -374,13 +374,14 @@ public class Keyboard2View extends View
             case Normal: tc_key = _tc.key; break;
           }
         drawKeyFrame(canvas, x, y, keyW, keyH, tc_key);
+        boolean isAction = isActionKey(k);
         if (k.keys[0] != null)
         {
           float labelY = y;
           if (row.is_number_row && k.keys[1] == null && k.keys[2] == null && k.keys[7] == null)
             labelY += NUMBER_ROW_LABEL_Y_OFFSET * keyH;
           drawLabel(canvas, k.keys[0], keyW / 2f + x, labelY, keyH, isKeyDown, tc_key,
-              row.is_number_row ? NUMBER_ROW_LABEL_SCALE : 1.0f);
+              row.is_number_row ? NUMBER_ROW_LABEL_SCALE : 1.0f, isAction);
         }
         boolean isLightSubLabel = row.is_number_row || !isLetterKey(k);
         for (int i = 1; i < 9; i++)
@@ -445,7 +446,17 @@ public class Keyboard2View extends View
     return s.length() > 0 && Character.isLetter(s.charAt(0));
   }
 
-  private int labelColor(KeyValue k, boolean isKeyDown, boolean sublabel, boolean isLightSubLabel)
+  private static boolean isActionKey(KeyboardData.Key k)
+  {
+    if (k.role != KeyboardData.Key.Role.Action)
+      return false;
+    KeyValue mainKey = k.keys[0];
+    if (mainKey == null)
+      return false;
+    return mainKey.getKind() != KeyValue.Kind.Char;
+  }
+
+  private int labelColor(KeyValue k, boolean isKeyDown, boolean sublabel, boolean isLightSubLabel, boolean isActionLabel)
   {
     if (isKeyDown)
     {
@@ -458,14 +469,14 @@ public class Keyboard2View extends View
       }
       return _theme.pressedColor;
     }
-    if (k.hasFlagsAny(KeyValue.FLAG_SECONDARY | KeyValue.FLAG_GREYED))
-    {
-      if (k.hasFlagsAny(KeyValue.FLAG_GREYED))
-        return _theme.greyedLabelColor;
-      return _theme.secondaryLabelColor;
-    }
+    if (k.hasFlagsAny(KeyValue.FLAG_GREYED))
+      return _theme.greyedLabelColor;
     if (sublabel)
       return isLightSubLabel ? _theme.subLabelNumberRowColor : _theme.subLabelColor;
+    if (isActionLabel && _theme.hasActionLabelColor)
+      return _theme.actionLabelColor;
+    if (k.hasFlagsAny(KeyValue.FLAG_SECONDARY))
+      return _theme.secondaryLabelColor;
     return _theme.labelColor;
   }
 
@@ -473,13 +484,14 @@ public class Keyboard2View extends View
   private static final float NUMBER_ROW_LABEL_Y_OFFSET = -0.10f;
 
   private void drawLabel(Canvas canvas, KeyValue kv, float x, float y,
-      float keyH, boolean isKeyDown, Theme.Computed.Key tc, float scale)
+      float keyH, boolean isKeyDown, Theme.Computed.Key tc, float scale, boolean isActionKey)
   {
     kv = modifyKey(kv, _mods);
     if (kv == null)
       return;
+    boolean isAction = isActionKey || (kv.getKind() == KeyValue.Kind.Editing && kv.getEditing() == KeyValue.Editing.SELECTION_CANCEL);
     float textSize = scaleTextSize(kv, true) * scale;
-    Paint p = tc.label_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, false, false), textSize);
+    Paint p = tc.label_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, false, false, isAction), textSize);
     canvas.drawText(kv.getString(), x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
   }
 
@@ -493,7 +505,7 @@ public class Keyboard2View extends View
     if (kv == null)
       return;
     float textSize = scaleTextSize(kv, false);
-    Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, true, isLightSubLabel), textSize, a);
+    Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, true, isLightSubLabel, false), textSize, a);
     float subPadding = _config.keyPadding;
     if (v == Vertical.CENTER)
       y += (keyH - p.ascent() - p.descent()) / 2f;
