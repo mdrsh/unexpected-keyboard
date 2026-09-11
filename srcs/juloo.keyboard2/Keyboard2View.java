@@ -491,8 +491,56 @@ public class Keyboard2View extends View
       return;
     boolean isAction = isActionKey || (kv.getKind() == KeyValue.Kind.Editing && kv.getEditing() == KeyValue.Editing.SELECTION_CANCEL);
     float textSize = scaleTextSize(kv, true) * scale;
-    Paint p = tc.label_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, false, false, isAction), textSize);
-    canvas.drawText(kv.getString(), x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
+    String label = kv.getString();
+    boolean specialFont = kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT);
+    if (kv.getKind() == KeyValue.Kind.Editing && kv.getEditing() == KeyValue.Editing.SPACE_BAR)
+    {
+      String lang = getLanguageLabel(_keyboard);
+      if (lang != null && !lang.isEmpty())
+      {
+        label = lang;
+        specialFont = false;
+      }
+    }
+    Paint p = tc.label_paint(specialFont, labelColor(kv, isKeyDown, false, false, isAction), textSize);
+    canvas.drawText(label, x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
+  }
+
+  private static String getLanguageLabel(KeyboardData kb)
+  {
+    if (kb == null || kb.name == null)
+      return null;
+    String name = kb.name.trim();
+    String nameLower = name.toLowerCase(java.util.Locale.ROOT);
+    if (nameLower.contains("ukrain") || nameLower.contains("українськ"))
+      return "українська";
+    if (nameLower.contains("deutsch") || nameLower.contains("german"))
+      return "deutsch";
+    if (nameLower.equals("colemak") || nameLower.equals("dvorak") || nameLower.equals("workman"))
+      return "english";
+    int start = name.indexOf('(');
+    int end = name.lastIndexOf(')');
+    if (start != -1 && end != -1 && end > start)
+    {
+      String inner = name.substring(start + 1, end).trim();
+      String innerLower = inner.toLowerCase(java.util.Locale.ROOT);
+      if (innerLower.equals("us") || innerLower.equals("uk") || innerLower.equals("gb") ||
+          innerLower.equals("ca") || innerLower.equals("au") || innerLower.equals("en") ||
+          innerLower.equals("english"))
+        return "english";
+      if (innerLower.contains("ukrain") || innerLower.contains("українськ"))
+        return "українська";
+      if (innerLower.contains("deutsch") || innerLower.contains("german"))
+        return "deutsch";
+      int comma = inner.indexOf(',');
+      if (comma != -1)
+        inner = inner.substring(0, comma).trim();
+      int withIdx = innerLower.indexOf(" with");
+      if (withIdx != -1)
+        inner = inner.substring(0, withIdx).trim();
+      return inner.toLowerCase(java.util.Locale.ROOT);
+    }
+    return name.toLowerCase(java.util.Locale.ROOT);
   }
 
   private void drawSubLabel(Canvas canvas, KeyValue kv, float x, float y,
