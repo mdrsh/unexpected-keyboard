@@ -491,7 +491,7 @@ public final class KeyValue implements Comparable<KeyValue>
 
   public static KeyValue makeActionKey(String symbol)
   {
-    return eventKey(symbol, Event.ACTION, FLAG_SMALLER_FONT);
+    return eventKey(symbol != null ? symbol.toLowerCase() : "", Event.ACTION, FLAG_SMALLER_FONT);
   }
 
   /** Make a key that types a string. A char key is returned for a string of
@@ -560,8 +560,8 @@ public final class KeyValue implements Comparable<KeyValue>
 
       /* Modifiers and dead-keys */
       case "shift": return SHIFT;
-      case "ctrl": return modifierKey("Ctrl", Modifier.CTRL, 0);
-      case "alt": return modifierKey("Alt", Modifier.ALT, 0);
+      case "ctrl": return modifierKey("ctrl", Modifier.CTRL, 0);
+      case "alt": return modifierKey("alt", Modifier.ALT, 0);
       case "accent_aigu": return diacritic(0xE050, Modifier.AIGU);
       case "accent_caron": return diacritic(0xE051, Modifier.CARON);
       case "accent_cedille": return diacritic(0xE052, Modifier.CEDILLE);
@@ -583,13 +583,13 @@ public final class KeyValue implements Comparable<KeyValue>
       case "accent_hook_above": return diacritic(0xE062, Modifier.HOOK_ABOVE);
       case "accent_double_grave": return diacritic(0xE063, Modifier.DOUBLE_GRAVE);
       case "accent_small_caps": return diacritic("Aᴀ", Modifier.SMALL_CAPS);
-      case "superscript": return modifierKey("Sup", Modifier.SUPERSCRIPT, 0);
-      case "subscript": return modifierKey("Sub", Modifier.SUBSCRIPT, 0);
-      case "ordinal": return modifierKey("Ord", Modifier.ORDINAL, 0);
-      case "arrows": return modifierKey("Arr", Modifier.ARROWS, 0);
-      case "box": return modifierKey("Box", Modifier.BOX, 0);
-      case "fn": return modifierKey("Fn", Modifier.FN, 0);
-      case "meta": return modifierKey("Meta", Modifier.META, 0);
+      case "superscript": return modifierKey("sup", Modifier.SUPERSCRIPT, 0);
+      case "subscript": return modifierKey("sub", Modifier.SUBSCRIPT, 0);
+      case "ordinal": return modifierKey("ord", Modifier.ORDINAL, 0);
+      case "arrows": return modifierKey("arr", Modifier.ARROWS, 0);
+      case "box": return modifierKey("box", Modifier.BOX, 0);
+      case "fn": return modifierKey("fn", Modifier.FN, 0);
+      case "meta": return modifierKey("meta", Modifier.META, 0);
 
       /* Combining diacritics */
       /* Glyphs is the corresponding dead-key + 0x0100. */
@@ -641,12 +641,12 @@ public final class KeyValue implements Comparable<KeyValue>
 
       /* Special event keys */
       case "config": return CONFIG;
-      case "switch_text": return eventKey("ABC", Event.SWITCH_TEXT, FLAG_SMALLER_FONT);
+      case "switch_text": return eventKey("abc", Event.SWITCH_TEXT, FLAG_SMALLER_FONT);
       case "switch_numeric": return eventKey("123+", Event.SWITCH_NUMERIC, FLAG_SMALLER_FONT);
       case "switch_emoji": return eventKey(0xE001, Event.SWITCH_EMOJI, FLAG_SMALLER_FONT);
-      case "switch_back_emoji": return eventKey("ABC", Event.SWITCH_BACK_EMOJI, 0);
+      case "switch_back_emoji": return eventKey("abc", Event.SWITCH_BACK_EMOJI, 0);
       case "switch_clipboard": return eventKey(0xE017, Event.SWITCH_CLIPBOARD, 0);
-      case "switch_back_clipboard": return eventKey("ABC", Event.SWITCH_BACK_CLIPBOARD, 0);
+      case "switch_back_clipboard": return eventKey("abc", Event.SWITCH_BACK_CLIPBOARD, 0);
       case "switch_forward": return eventKey(0xE013, Event.SWITCH_FORWARD, FLAG_SMALLER_FONT);
       case "switch_backward": return eventKey(0xE014, Event.SWITCH_BACKWARD, FLAG_SMALLER_FONT);
       case "switch_greekmath": return eventKey("πλ∇¬", Event.SWITCH_GREEKMATH, FLAG_SMALLER_FONT);
@@ -665,7 +665,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "change_dictionary": return eventKey(0xE01D, Event.CHANGE_DICTIONARY, 0);
 
       /* Key events */
-      case "esc": return keyeventKey("Esc", KeyEvent.KEYCODE_ESCAPE, FLAG_SMALLER_FONT);
+      case "esc": return keyeventKey("esc", KeyEvent.KEYCODE_ESCAPE, FLAG_SMALLER_FONT);
       case "enter": return ENTER;
       case "up": return keyeventKey(0xE005, KeyEvent.KEYCODE_DPAD_UP, 0);
       case "right": return keyeventKey(0xE006, KeyEvent.KEYCODE_DPAD_RIGHT, FLAG_SMALLER_FONT);
@@ -676,7 +676,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "home": return keyeventKey(0xE00B, KeyEvent.KEYCODE_MOVE_HOME, FLAG_SMALLER_FONT);
       case "end": return keyeventKey(0xE00C, KeyEvent.KEYCODE_MOVE_END, FLAG_SMALLER_FONT);
       case "delete": return keyeventKey(0xE010, KeyEvent.KEYCODE_FORWARD_DEL, 0);
-      case "insert": return keyeventKey("Ins", KeyEvent.KEYCODE_INSERT, FLAG_SMALLER_FONT);
+      case "insert": return keyeventKey("ins", KeyEvent.KEYCODE_INSERT, FLAG_SMALLER_FONT);
       case "f1": return keyeventKey("F1", KeyEvent.KEYCODE_F1, 0);
       case "f2": return keyeventKey("F2", KeyEvent.KEYCODE_F2, 0);
       case "f3": return keyeventKey("F3", KeyEvent.KEYCODE_F3, 0);
@@ -690,8 +690,8 @@ public final class KeyValue implements Comparable<KeyValue>
       case "f11": return keyeventKey("F11", KeyEvent.KEYCODE_F11, FLAG_SMALLER_FONT);
       case "f12": return keyeventKey("F12", KeyEvent.KEYCODE_F12, FLAG_SMALLER_FONT);
       case "tab": return keyeventKey(0xE00F, KeyEvent.KEYCODE_TAB, FLAG_SMALLER_FONT);
-      case "menu": return keyeventKey("Menu", KeyEvent.KEYCODE_MENU, FLAG_SMALLER_FONT);
-      case "scroll_lock": return keyeventKey("Scrl", KeyEvent.KEYCODE_SCROLL_LOCK, FLAG_SMALLER_FONT);
+      case "menu": return keyeventKey("menu", KeyEvent.KEYCODE_MENU, FLAG_SMALLER_FONT);
+      case "scroll_lock": return keyeventKey("scrl", KeyEvent.KEYCODE_SCROLL_LOCK, FLAG_SMALLER_FONT);
 
       /* Spaces */
       case "\\t": return charKey("\\t", '\t', 0); // Send the tab character
