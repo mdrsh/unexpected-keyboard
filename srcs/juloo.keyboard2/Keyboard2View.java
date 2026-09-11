@@ -382,10 +382,11 @@ public class Keyboard2View extends View
           drawLabel(canvas, k.keys[0], keyW / 2f + x, labelY, keyH, isKeyDown, tc_key,
               row.is_number_row ? NUMBER_ROW_LABEL_SCALE : 1.0f);
         }
+        boolean isLightSubLabel = row.is_number_row || !isLetterKey(k);
         for (int i = 1; i < 9; i++)
         {
           if (k.keys[i] != null)
-            drawSubLabel(canvas, k.keys[i], x, y, keyW, keyH, i, isKeyDown, tc_key, row.is_number_row);
+            drawSubLabel(canvas, k.keys[i], x, y, keyW, keyH, i, isKeyDown, tc_key, isLightSubLabel);
         }
         drawIndication(canvas, k, x, y, keyW, keyH, _tc);
         x += _keyWidth * k.width;
@@ -431,7 +432,20 @@ public class Keyboard2View extends View
     canvas.restore();
   }
 
-  private int labelColor(KeyValue k, boolean isKeyDown, boolean sublabel, boolean isNumberRow)
+  private static boolean isLetterKey(KeyboardData.Key k)
+  {
+    if (k.role != KeyboardData.Key.Role.Normal)
+      return false;
+    KeyValue mainKey = k.keys[0];
+    if (mainKey == null)
+      return false;
+    if (mainKey.getKind() == KeyValue.Kind.Char)
+      return Character.isLetter(mainKey.getChar());
+    String s = mainKey.getString();
+    return s.length() > 0 && Character.isLetter(s.charAt(0));
+  }
+
+  private int labelColor(KeyValue k, boolean isKeyDown, boolean sublabel, boolean isLightSubLabel)
   {
     if (isKeyDown)
     {
@@ -451,7 +465,7 @@ public class Keyboard2View extends View
       return _theme.secondaryLabelColor;
     }
     if (sublabel)
-      return isNumberRow ? _theme.subLabelNumberRowColor : _theme.subLabelColor;
+      return isLightSubLabel ? _theme.subLabelNumberRowColor : _theme.subLabelColor;
     return _theme.labelColor;
   }
 
@@ -471,7 +485,7 @@ public class Keyboard2View extends View
 
   private void drawSubLabel(Canvas canvas, KeyValue kv, float x, float y,
       float keyW, float keyH, int sub_index, boolean isKeyDown,
-      Theme.Computed.Key tc, boolean isNumberRow)
+      Theme.Computed.Key tc, boolean isLightSubLabel)
   {
     Paint.Align a = LABEL_POSITION_H[sub_index];
     Vertical v = LABEL_POSITION_V[sub_index];
@@ -479,7 +493,7 @@ public class Keyboard2View extends View
     if (kv == null)
       return;
     float textSize = scaleTextSize(kv, false);
-    Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, true, isNumberRow), textSize, a);
+    Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, true, isLightSubLabel), textSize, a);
     float subPadding = _config.keyPadding;
     if (v == Vertical.CENTER)
       y += (keyH - p.ascent() - p.descent()) / 2f;
