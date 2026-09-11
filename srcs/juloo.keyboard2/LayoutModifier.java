@@ -54,7 +54,7 @@ public final class LayoutModifier
     }
     // Add the bottom row before computing the extra keys
     if (kw.bottom_row)
-      kw = kw.insert_row(bottom_row, kw.rows.size());
+      kw = kw.insert_row(bottom_row.with_height(globalConfig.bottomRowHeightScale), kw.rows.size());
     // Split the layout in landscape orientation
     if (globalConfig.split_layout)
       kw = LayoutLandscapeModifier.transform_to_landscape(kw);

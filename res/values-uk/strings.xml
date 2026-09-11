@@ -126,6 +126,8 @@
     <string name="pref_show_number_row_symbols">Цифровий рядок із символами</string>
     <string name="pref_category_suggestions">Пропозиції</string>
     <string name="pref_suggestions_title">Пропозиції</string>
+    <string name="pref_suggestions_height_title">Висота смуги пропозицій</string>
+    <string name="pref_bottom_row_height_title">Висота рядка з пробілом</string>
     <string name="pref_suggestions_summary">Увімкнути автодоповнення та перевірку написання</string>
     <string name="pref_space_bar_auto_complete_title">Автодоповнювати пробілом</string>
     <string name="pref_space_bar_auto_complete_summary">Ввести найкращу пропозицію натисканням пробілу</string>

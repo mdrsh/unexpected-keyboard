@@ -358,6 +358,11 @@ public final class KeyboardData
       return new Row(keys, height, shift);
     }
 
+    public Row with_height(float h)
+    {
+      return new Row(keys, h, shift);
+    }
+
     public void getKeys(Map<KeyValue, KeyPos> dst, int row)
     {
       for (int c = 0; c < keys.size(); c++)

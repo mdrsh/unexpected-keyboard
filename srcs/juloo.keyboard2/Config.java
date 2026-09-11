@@ -100,6 +100,8 @@ public final class Config
   int current_layout_wide;
   /** Whether to automatically split the layout. */
   public boolean split_layout;
+  public float suggestionsHeightScale;
+  public float bottomRowHeightScale;
 
   private Config(SharedPreferences prefs, Resources res,
       Boolean foldableUnfolded, Dictionaries dicts)
@@ -204,6 +206,8 @@ public final class Config
     float screen_width_dp = dm.widthPixels / dm.density;
     wide_screen = screen_width_dp >= WIDE_DEVICE_THRESHOLD;
     split_layout = get_split_layout();
+    suggestionsHeightScale = _prefs.getInt("suggestions_height", 75) / 100.f;
+    bottomRowHeightScale = _prefs.getInt("bottom_row_height", 80) / 100.f;
   }
 
   public int get_current_layout()

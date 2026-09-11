@@ -35,6 +35,8 @@
     <string name="pref_extra_keys_internal">Select keys to add to the keyboard</string>
     <string name="pref_category_suggestions">Suggestions</string>
     <string name="pref_suggestions_title">Suggestions</string>
+    <string name="pref_suggestions_height_title">Suggestions bar height</string>
+    <string name="pref_bottom_row_height_title">Space bar row height</string>
     <string name="pref_suggestions_summary">Enable word completion and spell checking</string>
     <string name="pref_space_bar_auto_complete_title">Autocomplete with the space bar</string>
     <string name="pref_space_bar_auto_complete_summary">Enter the best suggestion by pressing space</string>

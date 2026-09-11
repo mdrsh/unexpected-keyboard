@@ -112,23 +112,54 @@ public class CandidatesView extends LinearLayout
   /** Set the height of the suggestion row and the text size. */
   void set_sizes(Config config)
   {
-    // Make the candidates view about as high as a keyboard row.
-    float row_height = config.keyboard_rows_height_pixels * (1 - config.key_vertical_margin);
+    float full_row_height = config.keyboard_rows_height_pixels * (1 - config.key_vertical_margin);
+    float row_height = full_row_height * config.suggestionsHeightScale;
     ViewGroup.MarginLayoutParams p =
       (ViewGroup.MarginLayoutParams)getLayoutParams();
     p.height = (int)row_height;
     setLayoutParams(p);
-    // Match the size of labels on the keyboard.
-    float text_size = row_height * config.characterSize * config.labelTextSize;
+    float density = getResources().getDisplayMetrics().density;
+    int margin_v = Math.max(1, Math.round(2 * config.suggestionsHeightScale * density));
+    int padding_v = Math.max(1, Math.round(2 * config.suggestionsHeightScale * density));
+    int padding_h = Math.round(4 * density);
+    // Soft scaling: 100% height -> 100% text, 60% height -> 75% text
+    float font_scale = 0.375f + 0.625f * config.suggestionsHeightScale;
+    float text_size = full_row_height * font_scale * config.characterSize * config.labelTextSize;
     for (int i = 0; i < NUM_CANDIDATES; i++)
     {
       TextView v = _item_views[i];
+      ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+      if (lp != null)
+      {
+        lp.topMargin = margin_v;
+        lp.bottomMargin = margin_v;
+        if (i == 3) // emoji button
+        {
+          int emoji_w = Math.round(30 * density * config.suggestionsHeightScale);
+          lp.width = emoji_w;
+          lp.height = (int)(row_height - 2 * margin_v);
+        }
+        v.setLayoutParams(lp);
+      }
+      v.setPadding(padding_h, padding_v, padding_h, padding_v);
       // Set text size and enable auto size if supported.
       if (VERSION.SDK_INT < 26)
         v.setTextSize(TypedValue.COMPLEX_UNIT_PX, text_size);
       else
         v.setAutoSizeTextTypeUniformWithConfiguration(
-            (int)(text_size / 2.), (int)text_size, 1, TypedValue.COMPLEX_UNIT_PX);
+            Math.max(1, (int)(text_size * 0.6f)), (int)text_size, 1, TypedValue.COMPLEX_UNIT_PX);
+    }
+    View dict_btn = findViewById(R.id.dictionary_switch);
+    if (dict_btn != null)
+    {
+      ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) dict_btn.getLayoutParams();
+      if (lp != null)
+      {
+        int s = Math.round(22 * density * config.suggestionsHeightScale);
+        lp.width = s;
+        lp.height = s;
+        dict_btn.setLayoutParams(lp);
+      }
     }
   }
 
