@@ -385,7 +385,7 @@ public class Keyboard2View extends View
         for (int i = 1; i < 9; i++)
         {
           if (k.keys[i] != null)
-            drawSubLabel(canvas, k.keys[i], x, y, keyW, keyH, i, isKeyDown, tc_key);
+            drawSubLabel(canvas, k.keys[i], x, y, keyW, keyH, i, isKeyDown, tc_key, row.is_number_row);
         }
         drawIndication(canvas, k, x, y, keyW, keyH, _tc);
         x += _keyWidth * k.width;
@@ -431,7 +431,7 @@ public class Keyboard2View extends View
     canvas.restore();
   }
 
-  private int labelColor(KeyValue k, boolean isKeyDown, boolean sublabel)
+  private int labelColor(KeyValue k, boolean isKeyDown, boolean sublabel, boolean isNumberRow)
   {
     if (isKeyDown)
     {
@@ -450,7 +450,9 @@ public class Keyboard2View extends View
         return _theme.greyedLabelColor;
       return _theme.secondaryLabelColor;
     }
-    return sublabel ? _theme.subLabelColor : _theme.labelColor;
+    if (sublabel)
+      return isNumberRow ? _theme.subLabelNumberRowColor : _theme.subLabelColor;
+    return _theme.labelColor;
   }
 
   private static final float NUMBER_ROW_LABEL_SCALE = 0.8f;
@@ -463,13 +465,13 @@ public class Keyboard2View extends View
     if (kv == null)
       return;
     float textSize = scaleTextSize(kv, true) * scale;
-    Paint p = tc.label_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, false), textSize);
+    Paint p = tc.label_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, false, false), textSize);
     canvas.drawText(kv.getString(), x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
   }
 
   private void drawSubLabel(Canvas canvas, KeyValue kv, float x, float y,
       float keyW, float keyH, int sub_index, boolean isKeyDown,
-      Theme.Computed.Key tc)
+      Theme.Computed.Key tc, boolean isNumberRow)
   {
     Paint.Align a = LABEL_POSITION_H[sub_index];
     Vertical v = LABEL_POSITION_V[sub_index];
@@ -477,7 +479,7 @@ public class Keyboard2View extends View
     if (kv == null)
       return;
     float textSize = scaleTextSize(kv, false);
-    Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, true), textSize, a);
+    Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isKeyDown, true, isNumberRow), textSize, a);
     float subPadding = _config.keyPadding;
     if (v == Vertical.CENTER)
       y += (keyH - p.ascent() - p.descent()) / 2f;

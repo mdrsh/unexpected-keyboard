@@ -28,6 +28,7 @@ public class Theme
   public final int pressedColor;
   public final int labelColor;
   public final int subLabelColor;
+  public final int subLabelNumberRowColor;
   public final int secondaryLabelColor;
   public final int greyedLabelColor;
 
@@ -64,6 +65,7 @@ public class Theme
     pressedColor = s.getColor(R.styleable.keyboard_colorLabelPressed, labelColor);
     lockedColor = s.getColor(R.styleable.keyboard_colorLabelLocked, 0);
     subLabelColor = s.getColor(R.styleable.keyboard_colorSubLabel, 0);
+    subLabelNumberRowColor = s.getColor(R.styleable.keyboard_colorSubLabelNumberRow, subLabelColor);
     secondaryLabelColor = adjustLight(labelColor,
         s.getFloat(R.styleable.keyboard_secondaryDimming, 0.25f));
     greyedLabelColor = adjustLight(labelColor,
