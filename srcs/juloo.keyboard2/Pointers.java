@@ -74,12 +74,55 @@ public final class Pointers implements Handler.Callback
     return false;
   }
 
+  public boolean isMainKeyDown(KeyboardData.Key k)
+  {
+    for (Pointer p : _ptrs)
+    {
+      if (p.key == k)
+      {
+        if (p.value == null)
+          return true;
+        if (k.keys[0] != null)
+        {
+          if (p.value.equals(k.keys[0]))
+            return true;
+          if (k.keys[0].equals(KeyValue.SHIFT) && p.value.getKind() == KeyValue.Kind.Event
+              && p.value.getEvent() == KeyValue.Event.CAPS_LOCK)
+            return true;
+        }
+        boolean isSubkey = false;
+        for (int i = 1; i < 9; i++)
+        {
+          if (k.keys[i] != null && p.value.equals(k.keys[i]))
+          {
+            isSubkey = true;
+            break;
+          }
+        }
+        if (!isSubkey)
+          return true;
+      }
+    }
+    return false;
+  }
+
   /** See [FLAG_P_*] flags. Returns [-1] if the key is not pressed. */
   public int getKeyFlags(KeyValue kv)
   {
     for (Pointer p : _ptrs)
-      if (p.value != null && p.value.equals(kv))
-        return p.flags;
+    {
+      if (p.value != null)
+      {
+        if (p.value.equals(kv))
+          return p.flags;
+        if (kv.getKind() == KeyValue.Kind.Event && kv.getEvent() == KeyValue.Event.CAPS_LOCK
+            && p.value.equals(KeyValue.SHIFT))
+          return p.flags;
+        if (kv.equals(KeyValue.SHIFT) && p.value.getKind() == KeyValue.Kind.Event
+            && p.value.getEvent() == KeyValue.Event.CAPS_LOCK)
+          return p.flags;
+      }
+    }
     return -1;
   }
 
