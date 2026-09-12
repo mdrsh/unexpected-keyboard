@@ -232,6 +232,17 @@ public final class Pointers implements Handler.Callback
     _handler.onPointerFlagsChanged(true);
   }
 
+  public void cancelPointer(int pointerId)
+  {
+    Pointer ptr = getPtr(pointerId);
+    if (ptr != null)
+    {
+      stopLongPress(ptr);
+      removePtr(ptr);
+      _handler.onPointerFlagsChanged(false);
+    }
+  }
+
   /* Whether an other pointer is down on a non-special key. */
   private boolean isOtherPointerDown()
   {
@@ -518,6 +529,23 @@ public final class Pointers implements Handler.Callback
     ptr.sliding = new Sliding(x, y, dirx, diry, kv.getSlider());
   }
 
+  public void switchToSlider(int pointerId, float x, float y, float dx)
+  {
+    Pointer ptr = getPtr(pointerId);
+    if (ptr == null || ptr.hasFlagsAny(FLAG_P_SLIDING))
+      return;
+    KeyValue sliderKey = KeyValue.sliderKey(dx < 0 ? KeyValue.Slider.Cursor_left : KeyValue.Slider.Cursor_right, 1);
+    ptr.value = sliderKey;
+    ptr.flags = pointer_flags_of_kv(sliderKey);
+    startSliding(ptr, x, y, dx, 0f, sliderKey);
+    if (ptr.sliding != null)
+    {
+      ptr.sliding.last_move_ms = System.currentTimeMillis() - 16;
+      ptr.sliding.speed = 1.0f;
+    }
+    _handler.onPointerDown(sliderKey, true);
+  }
+
   /** Return the [FLAG_P_*] flags that correspond to pressing [kv]. */
   int pointer_flags_of_kv(KeyValue kv)
   {
@@ -661,17 +689,17 @@ public final class Pointers implements Handler.Callback
 
     public void onTouchMove(Pointer ptr, float x, float y)
     {
-      // Start sliding only after the pointer has travelled an other distance.
-      // This allows to trigger the slider movements only once with a short
-      // swipe.
       float travelled = Math.abs(x - last_x) + Math.abs(y - last_y);
       if (last_move_ms == -1)
       {
-        if (travelled < (_config.swipe_dist_px + _config.slide_step_px))
+        if (travelled < _config.slide_step_px * 0.25f)
           return;
-        last_move_ms = System.currentTimeMillis();
+        last_move_ms = System.currentTimeMillis() - 16;
       }
       float current_speed = speed / _config.slide_step_px;
+      if (Float.isNaN(current_speed) || current_speed <= 0.05f)
+        current_speed = 1.0f / _config.slide_step_px;
+
       if (slider.isVertical()) {
         d += (y - last_y) * current_speed * direction_y * SPEED_VERTICAL_MULT;
       } else {
@@ -679,6 +707,9 @@ public final class Pointers implements Handler.Callback
           current_speed *= SPEED_WORD_MULT;
         d += (x - last_x) * current_speed * direction_x;
       }
+
+      if (Float.isNaN(d))
+        d = 0.f;
 
       update_speed(travelled, x, y);
       // Send an event when [abs(d)] exceeds [1].
@@ -706,9 +737,16 @@ public final class Pointers implements Handler.Callback
     void update_speed(float travelled, float x, float y)
     {
       long now = System.currentTimeMillis();
+      long elapsed = now - last_move_ms;
+      if (elapsed <= 0)
+        elapsed = 1;
       float instant_speed = Math.min(SPEED_MAX,
-          travelled / (float)(now - last_move_ms) + 1.f);
+          travelled / (float)elapsed + 1.f);
+      if (Float.isNaN(instant_speed))
+        instant_speed = 1.f;
       speed = speed + (instant_speed - speed) * SPEED_SMOOTHING;
+      if (Float.isNaN(speed) || speed < 0.1f)
+        speed = 1.f;
       last_move_ms = now;
       last_x = x;
       last_y = y;
