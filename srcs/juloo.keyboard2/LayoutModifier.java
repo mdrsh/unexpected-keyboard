@@ -58,7 +58,6 @@ public final class LayoutModifier
     {
       KeyboardData.Row br = globalConfig.isUserModeBottomRow ? bottom_row_user : bottom_row;
       kw = kw.insert_row(br.with_height(globalConfig.bottomRowHeightScale), kw.rows.size());
-      remove_keys.removeAll(br.getKeys(0).keySet());
     }
     // Split the layout in landscape orientation
     if (globalConfig.split_layout)
@@ -75,7 +74,8 @@ public final class LayoutModifier
       globalConfig.extra_keys_subtype.compute(extra_keys,
           new ExtraKeys.Query(kw.script, present));
     }
-    kw = kw.mapKeys(new KeyboardData.MapKeyValues() {
+    final int bottom_row_idx = kw.bottom_row ? kw.rows.size() - 1 : -1;
+    final KeyboardData.MapKeyValues letterRowMapper = new KeyboardData.MapKeyValues() {
       public KeyValue apply(KeyValue key, boolean localized)
       {
         if (localized && !extra_keys.containsKey(key))
@@ -84,7 +84,21 @@ public final class LayoutModifier
           return null;
         return modify_key(key);
       }
-    });
+    };
+    final KeyboardData.MapKeyValues bottomRowMapper = new KeyboardData.MapKeyValues() {
+      public KeyValue apply(KeyValue key, boolean localized)
+      {
+        if (localized && !extra_keys.containsKey(key))
+          return null;
+        return modify_key(key);
+      }
+    };
+    java.util.ArrayList<KeyboardData.Row> newRows = new java.util.ArrayList<KeyboardData.Row>();
+    for (int i = 0; i < kw.rows.size(); i++)
+    {
+      newRows.add(kw.rows.get(i).mapKeys(i == bottom_row_idx ? bottomRowMapper : letterRowMapper));
+    }
+    kw = kw.with_rows(newRows);
     if (added_numpad != null)
       kw = kw.addNumPad(added_numpad);
     // Add extra keys that are not on the layout (including 'loc' keys)

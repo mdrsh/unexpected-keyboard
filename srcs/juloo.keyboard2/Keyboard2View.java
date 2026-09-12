@@ -385,9 +385,10 @@ public class Keyboard2View extends View
               row.is_number_row ? NUMBER_ROW_LABEL_SCALE : 1.0f, isAction);
         }
         boolean isLightSubLabel = row.is_number_row || !isLetterKey(k);
+        boolean isMainSpaceBar = k.role == KeyboardData.Key.Role.Space_bar && _keyboard.bottom_row;
         for (int i = 1; i < 9; i++)
         {
-          if (k.keys[i] != null)
+          if (k.keys[i] != null && !isMainSpaceBar)
             drawSubLabel(canvas, k.keys[i], x, y, keyW, keyH, i, isMainKeyDown, tc_key, isLightSubLabel);
         }
         drawIndication(canvas, k, x, y, keyW, keyH, _tc);
