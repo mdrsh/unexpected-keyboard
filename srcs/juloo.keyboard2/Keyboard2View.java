@@ -777,8 +777,8 @@ public class Keyboard2View extends View
       if (isKeyFrameActivated)
       {
         if ((flags & Pointers.FLAG_P_LOCKED) != 0)
-          return _theme.lockedColor;
-        return _theme.activatedColor;
+          return (_theme.lockedColor != 0) ? _theme.lockedColor : 0xFFFFFFFF;
+        return (_theme.activatedColor != 0) ? _theme.activatedColor : 0xFFFFFFFF;
       }
       return _theme.hasActionLabelColor ? _theme.actionLabelColor : _theme.colorKeyActivated;
     }
@@ -814,6 +814,22 @@ public class Keyboard2View extends View
     float textSize = scaleTextSize(kv, true) * scale;
     String label = kv.getString();
     boolean specialFont = kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT);
+    boolean isShift = kv.equals(KeyValue.SHIFT) ||
+        (kv.getKind() == KeyValue.Kind.Event && kv.getEvent() == KeyValue.Event.CAPS_LOCK);
+    if (isShift)
+    {
+      int flags = _pointers.getKeyFlags(kv);
+      if (flags != -1 && (flags & Pointers.FLAG_P_LOCKED) != 0)
+      {
+        label = String.valueOf((char)0xE005);
+        specialFont = true;
+      }
+      else
+      {
+        label = String.valueOf((char)0xE00A);
+        specialFont = true;
+      }
+    }
     if (kv.getKind() == KeyValue.Kind.Editing && kv.getEditing() == KeyValue.Editing.SPACE_BAR)
     {
       if (_config != null && _config.layouts != null && _config.layouts.size() > 1)
@@ -939,6 +955,13 @@ public class Keyboard2View extends View
     kv = modifyKey(kv, _mods);
     if (kv == null)
       return;
+    boolean isCaps = (kv.getKind() == KeyValue.Kind.Event && kv.getEvent() == KeyValue.Event.CAPS_LOCK);
+    if (isCaps)
+    {
+      int flags = _pointers.getKeyFlags(kv);
+      if (flags != -1 && (flags & Pointers.FLAG_P_LOCKED) != 0)
+        return;
+    }
     float textSize = scaleTextSize(kv, false);
     Paint p = tc.sublabel_paint(kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT), labelColor(kv, isMainKeyDown, false, true, isLightSubLabel, false), textSize, a);
     float subPadding = _config.keyPadding;

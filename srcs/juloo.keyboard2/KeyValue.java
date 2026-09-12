@@ -663,7 +663,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "change_method_prev": return CHANGE_METHOD_PREV;
       case "change_method_next": return CHANGE_METHOD_NEXT;
       case "action": return eventKey("action", Event.ACTION, FLAG_SMALLER_FONT); // Will always be replaced
-      case "capslock": return eventKey(0xE012, Event.CAPS_LOCK, 0);
+      case "capslock": return eventKey(0xE005, Event.CAPS_LOCK, 0);
       case "voice_typing": return eventKey(0xE015, Event.SWITCH_VOICE_TYPING, FLAG_SMALLER_FONT);
       case "voice_typing_chooser": return VOICE_TYPING_CHOOSER;
       case "complete_first": return statefulKey(Stateful.Complete_first);
