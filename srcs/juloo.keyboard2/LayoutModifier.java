@@ -139,7 +139,7 @@ public final class LayoutModifier
         return modify_key(key);
       }
     });
-    return attach_switch_mode_key(modified);
+    return modified;
   }
 
   /** Modify the pin entry layout. [main_kw] is used to map the digits into the
