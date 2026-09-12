@@ -102,6 +102,8 @@ public final class Config
   public boolean split_layout;
   public float suggestionsHeightScale;
   public float bottomRowHeightScale;
+  public static final String PREF_BOTTOM_ROW_USER_MODE = "bottom_row_user_mode";
+  public boolean isUserModeBottomRow = false;
 
   private Config(SharedPreferences prefs, Resources res,
       Boolean foldableUnfolded, Dictionaries dicts)
@@ -208,6 +210,7 @@ public final class Config
     split_layout = get_split_layout();
     suggestionsHeightScale = _prefs.getInt("suggestions_height", 75) / 100.f;
     bottomRowHeightScale = _prefs.getInt("bottom_row_height", 80) / 100.f;
+    isUserModeBottomRow = _prefs.getBoolean(PREF_BOTTOM_ROW_USER_MODE, false);
   }
 
   public int get_current_layout()
@@ -233,6 +236,12 @@ public final class Config
   {
     clipboard_history_enabled = e;
     _prefs.edit().putBoolean("clipboard_history_enabled", e).apply();
+  }
+
+  public void toggleBottomRowMode()
+  {
+    isUserModeBottomRow = !isUserModeBottomRow;
+    _prefs.edit().putBoolean(PREF_BOTTOM_ROW_USER_MODE, isUserModeBottomRow).apply();
   }
 
   private float get_dip_pref(DisplayMetrics dm, String pref_name, float def)
@@ -281,6 +290,7 @@ public final class Config
       case "rosepine": return R.style.RosePine;
       case "everforestlight": return R.style.EverforestLight;
       case "cobalt": return R.style.Cobalt;
+      case "cobalt_classic": return R.style.CobaltClassic;
       case "pine": return R.style.Pine;
       case "epaperblack": return R.style.ePaperBlack;
       case "dracula": return R.style.Dracula;

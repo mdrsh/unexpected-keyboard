@@ -518,6 +518,19 @@ public class Keyboard2 extends InputMethodService
         case CHANGE_DICTIONARY:
           new DictionarySwitcher(Keyboard2.this, _dictionaries, this).choose();
           break;
+
+        case SWITCH_BOTTOM_ROW_MODE:
+          _config.toggleBottomRowMode();
+          if (_currentSpecialLayout != null)
+          {
+            _currentSpecialLayout = refresh_special_layout();
+            if (_currentSpecialLayout == null)
+              _currentSpecialLayout = loadNumericLayout();
+            setSpecialLayout(_currentSpecialLayout);
+          }
+          else
+            _keyboard_layout_view.setKeyboard(current_layout());
+          break;
       }
     }
 

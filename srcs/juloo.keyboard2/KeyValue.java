@@ -26,6 +26,7 @@ public final class KeyValue implements Comparable<KeyValue>
     SWITCH_VOICE_TYPING_CHOOSER,
     HIDE_SELF,
     CHANGE_DICTIONARY,
+    SWITCH_BOTTOM_ROW_MODE,
   }
 
   // Must be evaluated in the reverse order of their values.
@@ -546,6 +547,13 @@ public final class KeyValue implements Comparable<KeyValue>
   public static final KeyValue VOICE_TYPING_CHOOSER = eventKey(0xE015, Event.SWITCH_VOICE_TYPING_CHOOSER, FLAG_SMALLER_FONT);
   public static final KeyValue COMPOSE_CANCEL = placeholderKey(0xE01A, Placeholder.COMPOSE_CANCEL, FLAG_SECONDARY);
 
+  public static KeyValue bottomRowSwitchKey(boolean isUserMode)
+  {
+    return isUserMode ?
+      eventKey(">_", Event.SWITCH_BOTTOM_ROW_MODE, FLAG_SMALLER_FONT) :
+      eventKey("✎", Event.SWITCH_BOTTOM_ROW_MODE, 0);
+  }
+
   public static KeyValue getSpecialKeyByName(String name)
   {
     switch (name)
@@ -663,6 +671,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "complete_emoji": return statefulKey(Stateful.Complete_emoji);
       case "hide_self": return eventKey("⊻", Event.HIDE_SELF, FLAG_SMALLER_FONT);
       case "change_dictionary": return eventKey(0xE01D, Event.CHANGE_DICTIONARY, 0);
+      case "switch_bottom_row_mode": return bottomRowSwitchKey(false);
 
       /* Key events */
       case "esc": return keyeventKey("esc", KeyEvent.KEYCODE_ESCAPE, FLAG_SMALLER_FONT);

@@ -11,6 +11,7 @@ public final class LayoutModifier
 {
   static Config globalConfig;
   static KeyboardData.Row bottom_row;
+  static KeyboardData.Row bottom_row_user;
   static KeyboardData.Row number_row_no_symbols;
   static KeyboardData.Row number_row_symbols;
   static KeyboardData num_pad;
@@ -54,7 +55,11 @@ public final class LayoutModifier
     }
     // Add the bottom row before computing the extra keys
     if (kw.bottom_row)
-      kw = kw.insert_row(bottom_row.with_height(globalConfig.bottomRowHeightScale), kw.rows.size());
+    {
+      KeyboardData.Row br = globalConfig.isUserModeBottomRow ? bottom_row_user : bottom_row;
+      kw = kw.insert_row(br.with_height(globalConfig.bottomRowHeightScale), kw.rows.size());
+      remove_keys.removeAll(br.getKeys(0).keySet());
+    }
     // Split the layout in landscape orientation
     if (globalConfig.split_layout)
       kw = LayoutLandscapeModifier.transform_to_landscape(kw);
@@ -89,7 +94,7 @@ public final class LayoutModifier
     // Avoid adding extra keys to the number row
     if (added_number_row != null)
       kw = kw.insert_row(added_number_row, 0);
-    return kw;
+    return attach_switch_mode_key(kw);
   }
 
   /** Handle the numpad layout. The [main_kw] is used to adapt the numpad to
@@ -97,7 +102,7 @@ public final class LayoutModifier
   public static KeyboardData modify_numpad(KeyboardData kw, KeyboardData main_kw)
   {
     final int map_digit = KeyModifier.modify_numpad_script(main_kw.numpad_script);
-    return kw.mapKeys(new KeyboardData.MapKeyValues() {
+    KeyboardData modified = kw.mapKeys(new KeyboardData.MapKeyValues() {
       public KeyValue apply(KeyValue key, boolean localized)
       {
         switch (key.getKind())
@@ -120,6 +125,7 @@ public final class LayoutModifier
         return modify_key(key);
       }
     });
+    return attach_switch_mode_key(modified);
   }
 
   /** Modify the pin entry layout. [main_kw] is used to map the digits into the
@@ -210,6 +216,7 @@ public final class LayoutModifier
       number_row_no_symbols = KeyboardData.load_row(res, R.xml.number_row_no_symbols);
       number_row_symbols = KeyboardData.load_row(res, R.xml.number_row);
       bottom_row = KeyboardData.load_row(res, R.xml.bottom_row);
+      bottom_row_user = KeyboardData.load_row(res, R.xml.bottom_row_user);
       num_pad = KeyboardData.load_num_pad(res);
       split_middle_column = KeyboardData.load_row(res, R.xml.split_middle_column);
     }
@@ -217,5 +224,18 @@ public final class LayoutModifier
     {
       throw new RuntimeException(e.getMessage()); // Not recoverable
     }
+  }
+
+  static KeyboardData attach_switch_mode_key(KeyboardData kw)
+  {
+    final KeyValue switchModeKey = KeyValue.bottomRowSwitchKey(globalConfig.isUserModeBottomRow);
+    return kw.mapKeys(new KeyboardData.MapKey() {
+      public KeyboardData.Key apply(KeyboardData.Key k)
+      {
+        if (k.keys[0] != null && k.keys[0].equals(KeyValue.SHIFT) && k.keys[3] == null)
+          return k.withKeyValue(3, switchModeKey);
+        return k;
+      }
+    });
   }
 }
