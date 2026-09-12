@@ -685,7 +685,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "page_down": return keyeventKey(0xE003, KeyEvent.KEYCODE_PAGE_DOWN, 0);
       case "home": return keyeventKey(0xE00B, KeyEvent.KEYCODE_MOVE_HOME, FLAG_SMALLER_FONT);
       case "end": return keyeventKey(0xE00C, KeyEvent.KEYCODE_MOVE_END, FLAG_SMALLER_FONT);
-      case "delete": return keyeventKey(0xE010, KeyEvent.KEYCODE_FORWARD_DEL, 0);
+      case "delete": return keyeventKey("del", KeyEvent.KEYCODE_FORWARD_DEL, FLAG_SMALLER_FONT);
       case "insert": return keyeventKey("ins", KeyEvent.KEYCODE_INSERT, FLAG_SMALLER_FONT);
       case "f1": return keyeventKey("F1", KeyEvent.KEYCODE_F1, 0);
       case "f2": return keyeventKey("F2", KeyEvent.KEYCODE_F2, 0);
@@ -765,7 +765,7 @@ public final class KeyValue implements Comparable<KeyValue>
       case "undo": return editingKey(0xE036, Editing.UNDO, 0);
       case "redo": return editingKey(0xE037, Editing.REDO, 0);
       case "delete_word": return editingKey(0xE01B, Editing.DELETE_WORD, 0);
-      case "forward_delete_word": return editingKey(0xE01C, Editing.FORWARD_DELETE_WORD, 0);
+      case "forward_delete_word": return editingKey("del", Editing.FORWARD_DELETE_WORD, FLAG_SMALLER_FONT);
       case "cursor_left": return sliderKey(Slider.Cursor_left, 1);
       case "cursor_right": return sliderKey(Slider.Cursor_right, 1);
       case "cursor_up": return sliderKey(Slider.Cursor_up, 1);
