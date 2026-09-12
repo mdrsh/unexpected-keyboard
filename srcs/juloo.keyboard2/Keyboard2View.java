@@ -1,5 +1,8 @@
 package juloo.keyboard2;
 
+import android.animation.ValueAnimator;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Canvas;
@@ -12,14 +15,18 @@ import android.inputmethodservice.InputMethodService;
 import android.os.Build.VERSION;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
+import android.content.res.Resources;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 import java.util.Arrays;
 import java.util.List;
+import juloo.keyboard2.prefs.LayoutsPreference;
 
 public class Keyboard2View extends View
   implements View.OnTouchListener, Pointers.IPointerEventHandler
@@ -55,6 +62,21 @@ public class Keyboard2View extends View
   private Theme.Computed _tc;
 
   private static RectF _tmpRect = new RectF();
+
+  private final ActionArcMenu _arcMenu = new ActionArcMenu();
+  private int _potentialArcPointerId = -1;
+  private float _potentialArcDownX = 0f;
+  private float _potentialArcDownY = 0f;
+  private float _potentialArcMinY = 0f;
+  private float _potentialArcTurnX = 0f;
+  private boolean _potentialArcIsSpace = false;
+  private boolean _isSpaceSlidingLanguage = false;
+  private float _spaceSlideOffset = 0f;
+  private float _spaceKeyWidth = 0f;
+  private boolean _hapticFiredForThreshold = false;
+  private ValueAnimator _spaceSnapAnim = null;
+  private float _mainKeyboardBoundaryY = -1f;
+  private float _mainKeyboardHeight = -1f;
 
   enum Vertical
   {
@@ -116,6 +138,16 @@ public class Keyboard2View extends View
 
   public void reset()
   {
+    if (_arcMenu.isActive())
+      _arcMenu.cancel();
+    if (_spaceSnapAnim != null)
+    {
+      _spaceSnapAnim.cancel();
+      _spaceSnapAnim = null;
+    }
+    _isSpaceSlidingLanguage = false;
+    _spaceSlideOffset = 0f;
+    _potentialArcPointerId = -1;
     _mods = Pointers.Modifiers.EMPTY;
     _pointers.clear();
     requestLayout();
@@ -200,7 +232,55 @@ public class Keyboard2View extends View
     {
       case MotionEvent.ACTION_UP:
       case MotionEvent.ACTION_POINTER_UP:
-        _pointers.onTouchUp(event.getPointerId(event.getActionIndex()));
+        int upPointerId = event.getPointerId(event.getActionIndex());
+        if (_arcMenu.isActive() && upPointerId == _potentialArcPointerId)
+        {
+          int arcIdx = event.findPointerIndex(_potentialArcPointerId);
+          float upX = (arcIdx != -1) ? event.getX(arcIdx) : _potentialArcDownX;
+          float upY = (arcIdx != -1) ? event.getY(arcIdx) : _potentialArcDownY;
+          ActionArcMenu.ActionType action = _arcMenu.finishTouch(upX, upY);
+          _potentialArcPointerId = -1;
+          invalidate();
+          if (action != null)
+          {
+            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            executeArcAction(action);
+          }
+          return (true);
+        }
+        else if (_isSpaceSlidingLanguage && upPointerId == _potentialArcPointerId)
+        {
+          float kw = _spaceKeyWidth > 0 ? _spaceKeyWidth : 300f;
+          float threshold = kw * 0.35f;
+          if (_spaceSlideOffset <= -threshold)
+          {
+            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            executeArcAction(ActionArcMenu.ActionType.LANGUAGE_SWITCH);
+            _isSpaceSlidingLanguage = false;
+            _spaceSlideOffset = 0f;
+            invalidate();
+          }
+          else if (_spaceSlideOffset >= threshold)
+          {
+            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (_config != null && _config.handler != null)
+              _config.handler.key_up(KV_SWITCH_BACKWARD, Pointers.Modifiers.EMPTY);
+            _isSpaceSlidingLanguage = false;
+            _spaceSlideOffset = 0f;
+            invalidate();
+          }
+          else
+          {
+            animateSpaceSnapBack();
+          }
+          _potentialArcPointerId = -1;
+          return (true);
+        }
+        else if (_potentialArcPointerId != -1 && upPointerId == _potentialArcPointerId)
+        {
+          _potentialArcPointerId = -1;
+        }
+        _pointers.onTouchUp(upPointerId);
         break;
       case MotionEvent.ACTION_DOWN:
       case MotionEvent.ACTION_POINTER_DOWN:
@@ -209,19 +289,224 @@ public class Keyboard2View extends View
         float ty = event.getY(p);
         KeyboardData.Key key = getKeyAtPosition(tx, ty);
         if (key != null)
+        {
           _pointers.onTouchDown(tx, ty, event.getPointerId(p), key);
+          boolean isMainKeyboard = (_keyboard != null && _keyboard.bottom_row);
+          boolean isSpace = (key.role == KeyboardData.Key.Role.Space_bar && isMainKeyboard);
+          boolean isZero = (key.keys[0] != null && key.keys[0].getKind() == KeyValue.Kind.Char && key.keys[0].getChar() == '0');
+          if (isSpace || isZero)
+          {
+            if (_spaceSnapAnim != null)
+            {
+              _spaceSnapAnim.cancel();
+              _spaceSnapAnim = null;
+            }
+            _potentialArcPointerId = event.getPointerId(p);
+            _potentialArcDownX = tx;
+            _potentialArcDownY = ty;
+            _potentialArcMinY = ty;
+            _potentialArcTurnX = tx;
+            _potentialArcIsSpace = isSpace;
+            _isSpaceSlidingLanguage = false;
+            _spaceSlideOffset = 0f;
+            _hapticFiredForThreshold = false;
+          }
+        }
         break;
       case MotionEvent.ACTION_MOVE:
+        if (_arcMenu.isActive())
+        {
+          int arcIdx = event.findPointerIndex(_potentialArcPointerId);
+          if (arcIdx != -1)
+          {
+            _arcMenu.updateTouch(event.getX(arcIdx), event.getY(arcIdx));
+            invalidate();
+          }
+          return (true);
+        }
+        else if (_isSpaceSlidingLanguage)
+        {
+          int arcIdx = event.findPointerIndex(_potentialArcPointerId);
+          if (arcIdx != -1)
+          {
+            float curX = event.getX(arcIdx);
+            _spaceSlideOffset = curX - _potentialArcDownX;
+            float kw = _spaceKeyWidth > 0 ? _spaceKeyWidth : 300f;
+            float threshold = kw * 0.35f;
+            if (Math.abs(_spaceSlideOffset) >= threshold)
+            {
+              if (!_hapticFiredForThreshold)
+              {
+                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                _hapticFiredForThreshold = true;
+              }
+            }
+            else
+            {
+              _hapticFiredForThreshold = false;
+            }
+            invalidate();
+          }
+          return (true);
+        }
+        else if (_potentialArcPointerId != -1)
+        {
+          int arcIdx = event.findPointerIndex(_potentialArcPointerId);
+          if (arcIdx != -1)
+          {
+            float curX = event.getX(arcIdx);
+            float curY = event.getY(arcIdx);
+            float dx = curX - _potentialArcDownX;
+            float dy = curY - _potentialArcDownY;
+            float fanCenterY = getMiddleBottomLetterRowBoundary();
+            float triggerY = fanCenterY;
+
+            boolean isUpward = (dy < 0);
+            float distUp = isUpward ? -dy : 0f;
+            float distSide = Math.abs(dx);
+
+            if (curY < _potentialArcMinY)
+            {
+              _potentialArcMinY = curY;
+              if (distSide < _config.swipe_dist_px * 0.4f)
+                _potentialArcTurnX = curX;
+            }
+
+            float turnDx = curX - _potentialArcTurnX;
+            float turnDist = Math.abs(turnDx);
+
+            boolean hasMultipleLayouts = (_config != null && _config.layouts != null && _config.layouts.size() > 1);
+
+            // Sideways turn after moving up ("Г" / "Т" gesture)
+            boolean isTurnSideways = (turnDist >= _config.swipe_dist_px * 0.5f && distUp >= _config.swipe_dist_px * 0.4f);
+
+            // Horizontal slide on spacebar (within spacebar area, low vertical movement)
+            boolean isSpaceHorizontal = _potentialArcIsSpace && hasMultipleLayouts &&
+                (distUp < _config.swipe_dist_px * 0.45f && Math.abs(dy) < _config.swipe_dist_px * 0.8f) &&
+                (distSide >= _config.swipe_dist_px * 0.35f);
+
+            // Diagonal swipe (<= 60 degrees from horizontal) or horizontal slide when not spacebar/single layout
+            boolean isDiagonal = (!isUpward || distSide > distUp * 0.57735f) && (distSide >= _config.swipe_dist_px * 0.5f);
+
+            if (isSpaceHorizontal)
+            {
+              _isSpaceSlidingLanguage = true;
+              _spaceSlideOffset = dx;
+              _hapticFiredForThreshold = false;
+              _pointers.cancelPointer(_potentialArcPointerId);
+              invalidate();
+              return (true);
+            }
+            else if (isTurnSideways || isDiagonal)
+            {
+              float slideDx = isTurnSideways ? turnDx : dx;
+              _pointers.switchToSlider(_potentialArcPointerId, curX, curY, slideDx);
+              _potentialArcPointerId = -1;
+            }
+            else if (isUpward && (distSide <= distUp * 0.57735f))
+            {
+              if (curY <= triggerY)
+              {
+                _pointers.cancelPointer(_potentialArcPointerId);
+                _arcMenu.start(curX, _potentialArcDownY, _tc.row_height, fanCenterY,
+                    _potentialArcIsSpace && hasMultipleLayouts, getNextLanguageBadge(), getContext(), getWidth(), getHeight());
+                _arcMenu.updateTouch(curX, curY);
+                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                invalidate();
+                return (true);
+              }
+            }
+          }
+        }
         for (p = 0; p < event.getPointerCount(); p++)
           _pointers.onTouchMove(event.getX(p), event.getY(p), event.getPointerId(p));
         break;
       case MotionEvent.ACTION_CANCEL:
+        if (_arcMenu.isActive())
+        {
+          _arcMenu.cancel();
+          _potentialArcPointerId = -1;
+          invalidate();
+        }
+        if (_isSpaceSlidingLanguage)
+        {
+          _isSpaceSlidingLanguage = false;
+          _spaceSlideOffset = 0f;
+          _potentialArcPointerId = -1;
+          invalidate();
+        }
         _pointers.onTouchCancel();
         break;
       default:
         return (false);
     }
     return (true);
+  }
+
+  public float getMiddleBottomLetterRowBoundary()
+  {
+    boolean isMain = (_keyboard != null && _keyboard.bottom_row);
+
+    if (isMain)
+    {
+      float y = _tc.margin_top;
+      int letterRowCount = 0;
+      for (KeyboardData.Row row : _keyboard.rows)
+      {
+        y += row.shift * _tc.row_height;
+        y += row.height * _tc.row_height;
+        if (!row.is_number_row)
+        {
+          letterRowCount++;
+          if (letterRowCount == 2)
+            break;
+        }
+      }
+      _mainKeyboardBoundaryY = y;
+      _mainKeyboardHeight = getHeight();
+      return y;
+    }
+
+    // On numeric/special keyboards: output the fan at the EXACT SAME LEVEL as on the main keyboard!
+    if (_mainKeyboardBoundaryY > 0f && _mainKeyboardHeight > 0f)
+    {
+      float distFromBottom = _mainKeyboardHeight - _mainKeyboardBoundaryY;
+      return getHeight() - distFromBottom;
+    }
+
+    // Fallback if main keyboard was not measured yet: calculate directly from current layout in _config
+    if (_config != null && _config.layouts != null && !_config.layouts.isEmpty() && _tc != null)
+    {
+      int idx = _config.get_current_layout();
+      if (idx >= 0 && idx < _config.layouts.size())
+      {
+        KeyboardData raw = _config.layouts.get(idx);
+        if (raw != null)
+        {
+          KeyboardData mainKb = LayoutModifier.modify_layout(raw);
+          float y = _tc.margin_top;
+          int letterRowCount = 0;
+          for (KeyboardData.Row row : mainKb.rows)
+          {
+            y += row.shift * _tc.row_height;
+            y += row.height * _tc.row_height;
+            if (!row.is_number_row)
+            {
+              letterRowCount++;
+              if (letterRowCount == 2)
+                break;
+            }
+          }
+          float mainH = _tc.row_height * mainKb.keysHeight + _config.marginTop + _marginBottom;
+          _mainKeyboardBoundaryY = y;
+          _mainKeyboardHeight = mainH;
+          float distFromBottom = mainH - y;
+          return getHeight() - distFromBottom;
+        }
+      }
+    }
+
+    return getHeight() * 0.48f;
   }
 
   private KeyboardData.Row getRowAtPosition(float ty)
@@ -286,6 +571,25 @@ public class Keyboard2View extends View
       (int)(_tc.row_height * _keyboard.keysHeight
           + _config.marginTop + _marginBottom);
     setMeasuredDimension(width, height);
+
+    if (_keyboard != null && _keyboard.bottom_row)
+    {
+      float y = _tc.margin_top;
+      int letterRowCount = 0;
+      for (KeyboardData.Row row : _keyboard.rows)
+      {
+        y += row.shift * _tc.row_height;
+        y += row.height * _tc.row_height;
+        if (!row.is_number_row)
+        {
+          letterRowCount++;
+          if (letterRowCount == 2)
+            break;
+        }
+      }
+      _mainKeyboardBoundaryY = y;
+      _mainKeyboardHeight = height;
+    }
   }
 
   Rect _cached_exclusion_rect = new Rect();
@@ -387,6 +691,8 @@ public class Keyboard2View extends View
         }
         boolean isLightSubLabel = row.is_number_row || !isLetterKey(k);
         boolean isMainSpaceBar = k.role == KeyboardData.Key.Role.Space_bar && _keyboard.bottom_row;
+        if (isMainSpaceBar)
+          _spaceKeyWidth = keyW;
         for (int i = 1; i < 9; i++)
         {
           if (k.keys[i] != null && !isMainSpaceBar)
@@ -396,6 +702,10 @@ public class Keyboard2View extends View
         x += _keyWidth * k.width;
       }
       y += row.height * _tc.row_height;
+    }
+    if (_arcMenu.isActive())
+    {
+      _arcMenu.draw(canvas, _theme);
     }
   }
 
@@ -474,10 +784,14 @@ public class Keyboard2View extends View
     }
     if (isKeyFrameActivated)
       return _theme.secondaryLabelColor;
+    if (sublabel)
+    {
+      if (k.hasFlagsAny(KeyValue.FLAG_GREYED) && !(k.getKind() == KeyValue.Kind.Editing && k.getEditing() == KeyValue.Editing.SPACE_BAR))
+        return _theme.greyedLabelColor;
+      return isLightSubLabel ? _theme.subLabelNumberRowColor : _theme.subLabelColor;
+    }
     if (k.hasFlagsAny(KeyValue.FLAG_GREYED))
       return _theme.greyedLabelColor;
-    if (sublabel)
-      return isLightSubLabel ? _theme.subLabelNumberRowColor : _theme.subLabelColor;
     if (isAnyPointerDown)
       return _theme.labelColor;
     if (isActionLabel && _theme.hasActionLabelColor)
@@ -502,11 +816,14 @@ public class Keyboard2View extends View
     boolean specialFont = kv.hasFlagsAny(KeyValue.FLAG_KEY_FONT);
     if (kv.getKind() == KeyValue.Kind.Editing && kv.getEditing() == KeyValue.Editing.SPACE_BAR)
     {
-      String lang = getLanguageLabel(_keyboard);
-      if (lang != null && !lang.isEmpty())
+      if (_config != null && _config.layouts != null && _config.layouts.size() > 1)
       {
-        label = lang;
-        specialFont = false;
+        String lang = getLanguageLabel(_keyboard);
+        if (lang != null && !lang.isEmpty())
+        {
+          label = lang;
+          specialFont = false;
+        }
       }
     }
     boolean isImeAction = (kv.getKind() == KeyValue.Kind.Event && kv.getEvent() == KeyValue.Event.ACTION);
@@ -521,6 +838,58 @@ public class Keyboard2View extends View
       if (!isFilledGlyph)
         p.setFakeBoldText(true);
     }
+
+    if (kv.getKind() == KeyValue.Kind.Editing && kv.getEditing() == KeyValue.Editing.SPACE_BAR &&
+        _keyboard != null && _keyboard.bottom_row &&
+        _config != null && _config.layouts != null && _config.layouts.size() > 1 &&
+        (_isSpaceSlidingLanguage || _spaceSlideOffset != 0f))
+    {
+      float textY = (keyH - p.ascent() - p.descent()) / 2f + y;
+      float kw = _spaceKeyWidth > 0 ? _spaceKeyWidth : 300f;
+      float pad = _config.keyPadding;
+      float clipLeft = x - kw / 2f + pad;
+      float clipRight = x + kw / 2f - pad;
+
+      canvas.save();
+      canvas.clipRect(clipLeft, y, clipRight, y + keyH);
+
+      float currentX = x + _spaceSlideOffset;
+      canvas.drawText(label, currentX, textY, p);
+
+      int total = _config.layouts.size();
+      float spacing = Math.max(kw * 0.55f, p.measureText(label) / 2f + 40f);
+      float threshold = kw * 0.35f;
+      boolean reached = Math.abs(_spaceSlideOffset) >= threshold;
+
+      if (_spaceSlideOffset < 0)
+      {
+        int nextIdx = (_config.get_current_layout() + 1) % total;
+        String nextLang = getLanguageLabel(_config.layouts.get(nextIdx));
+        if (nextLang != null)
+        {
+          Paint pNext = new Paint(p);
+          if (reached)
+            pNext.setColor(_theme.colorKeyActivated);
+          canvas.drawText(nextLang, currentX + spacing, textY, pNext);
+        }
+      }
+      else if (_spaceSlideOffset > 0)
+      {
+        int prevIdx = (_config.get_current_layout() - 1 + total) % total;
+        String prevLang = getLanguageLabel(_config.layouts.get(prevIdx));
+        if (prevLang != null)
+        {
+          Paint pPrev = new Paint(p);
+          if (reached)
+            pPrev.setColor(_theme.colorKeyActivated);
+          canvas.drawText(prevLang, currentX - spacing, textY, pPrev);
+        }
+      }
+
+      canvas.restore();
+      return;
+    }
+
     canvas.drawText(label, x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
   }
 
@@ -605,5 +974,204 @@ public class Keyboard2View extends View
     float smaller_font = k.hasFlagsAny(KeyValue.FLAG_SMALLER_FONT) ? 0.75f : 1.f;
     float label_size = main_label ? _mainLabelSize : _subLabelSize;
     return label_size * smaller_font;
+  }
+
+  public static String layoutIdToLanguageCode(String id)
+  {
+    if (id == null || id.isEmpty() || id.equals("system"))
+      return null;
+    id = id.toLowerCase(java.util.Locale.ROOT);
+    // Explicit overrides for layouts without country suffixes or non-standard naming
+    if (id.equals("latn_qwerty_us") || id.equals("latn_qwerty_gb") ||
+        id.equals("latn_colemak") || id.equals("latn_dvorak") ||
+        id.equals("latn_workman_us") || id.equals("shaw_imperial_en"))
+      return "en";
+    if (id.equals("latn_qwerty_pl"))
+      return "pl";
+    if (id.equals("cyrl_jcuken_uk") || id.equals("cyrl_jiuken"))
+      return "uk";
+    if (id.startsWith("arab_"))
+    {
+      if (id.endsWith("_ir") || id.contains("_fa")) return "fa";
+      if (id.contains("_ckb")) return "ckb";
+      if (id.endsWith("_tly")) return "tly";
+      return "ar";
+    }
+    if (id.startsWith("armn_")) return "hy";
+    if (id.startsWith("deva_")) return "hi";
+    if (id.startsWith("georgian_")) return "ka";
+    if (id.startsWith("grek_")) return "el";
+    if (id.startsWith("guj_")) return "gu";
+    if (id.startsWith("hang_")) return "ko";
+    if (id.startsWith("hebr_")) return "he";
+    if (id.startsWith("kann_")) return "kn";
+    if (id.startsWith("sinhala_")) return "si";
+    if (id.startsWith("tamil_")) return "ta";
+    if (id.startsWith("beng_")) return id.contains("assamese") ? "as" : "bn";
+    if (id.equals("cyrl_ueishsht")) return "bg";
+    if (id.equals("cyrl_yaverti") || id.equals("cyrl_yawerty")) return "ru";
+    if (id.equals("cyrl_yqukeng_tj")) return "tg";
+    if (id.equals("cyrl_yxukeng_os")) return "os";
+    if (id.equals("latn_bone") || id.equals("latn_neo2") || id.equals("latn_qwertz")) return "de";
+    if (id.equals("latin_kbdtuf_tr")) return "tr";
+
+    int lastUnder = id.lastIndexOf('_');
+    if (lastUnder != -1 && lastUnder < id.length() - 1)
+    {
+      String suffix = id.substring(lastUnder + 1);
+      if (suffix.equals("us") || suffix.equals("gb")) return "en";
+      if (suffix.equals("cz")) return "cs";
+      if (suffix.equals("se")) return "sv";
+      if (suffix.equals("br") || suffix.equals("pt")) return "pt";
+      if (suffix.equals("jp")) return "ja";
+      if (suffix.equals("kr")) return "ko";
+      if (suffix.equals("il")) return "he";
+      if (suffix.equals("be") || suffix.equals("ch")) return "fr";
+      if (suffix.equals("tj")) return "tg";
+      if (suffix.length() == 2)
+        return suffix;
+    }
+    return null;
+  }
+
+  public String getNextLanguageBadge()
+  {
+    if (_config == null || _config.layouts == null || _config.layouts.size() <= 1)
+      return "";
+    int total = _config.layouts.size();
+    int nextIdx = (_config.get_current_layout() + 1) % total;
+    KeyboardData nextKb = _config.layouts.get(nextIdx);
+
+    String layoutId = null;
+    if (_config.layout_ids != null && nextIdx < _config.layout_ids.size())
+      layoutId = _config.layout_ids.get(nextIdx);
+
+    // Fallback: match nextKb.name with pref_layout_entries
+    if (layoutId == null && nextKb != null && nextKb.name != null)
+    {
+      Resources res = getResources();
+      List<String> names = LayoutsPreference.get_layout_names(res);
+      String[] entries = res.getStringArray(R.array.pref_layout_entries);
+      for (int i = 0; i < Math.min(names.size(), entries.length); i++)
+      {
+        if (nextKb.name.equals(entries[i]))
+        {
+          layoutId = names.get(i);
+          break;
+        }
+      }
+    }
+
+    if (layoutId == null || layoutId.equals("system"))
+    {
+      String lang = null;
+      if (_config.device_locales != null && _config.device_locales.default_ != null)
+      {
+        if (_config.device_locales.default_.default_layout != null)
+        {
+          String code = layoutIdToLanguageCode(_config.device_locales.default_.default_layout);
+          if (code != null)
+            return code;
+        }
+        lang = _config.device_locales.default_.lang_tag;
+      }
+      if (lang == null || lang.isEmpty())
+        lang = getResources().getConfiguration().locale.getLanguage();
+      if (lang != null && !lang.isEmpty())
+      {
+        int dash = lang.indexOf('-');
+        if (dash != -1)
+          lang = lang.substring(0, dash);
+        return lang.substring(0, Math.min(2, lang.length())).toLowerCase(java.util.Locale.ROOT);
+      }
+      return "en";
+    }
+
+    String code = layoutIdToLanguageCode(layoutId);
+    if (code != null)
+      return code;
+
+    // Fallback for custom layouts: extract from parentheses or start of name
+    if (nextKb != null && nextKb.name != null)
+    {
+      int start = nextKb.name.indexOf('(');
+      int end = nextKb.name.lastIndexOf(')');
+      if (start != -1 && end != -1 && end > start + 1)
+      {
+        String inner = nextKb.name.substring(start + 1, end).trim();
+        if (inner.length() >= 2)
+          return inner.substring(0, 2).toLowerCase(java.util.Locale.ROOT);
+      }
+      return nextKb.name.substring(0, Math.min(2, nextKb.name.length())).toLowerCase(java.util.Locale.ROOT);
+    }
+    return "en";
+  }
+
+  private static final KeyValue KV_HOME = KeyValue.getKeyByName("home");
+  private static final KeyValue KV_END = KeyValue.getKeyByName("end");
+  private static final KeyValue KV_UNDO = KeyValue.getKeyByName("undo");
+  private static final KeyValue KV_REDO = KeyValue.getKeyByName("redo");
+  private static final KeyValue KV_SELECT_ALL = KeyValue.getKeyByName("selectAll");
+  private static final KeyValue KV_CUT = KeyValue.getKeyByName("cut");
+  private static final KeyValue KV_COPY = KeyValue.getKeyByName("copy");
+  private static final KeyValue KV_PASTE = KeyValue.getKeyByName("paste");
+  private static final KeyValue KV_SWITCH_FORWARD = KeyValue.getKeyByName("switch_forward");
+  private static final KeyValue KV_SWITCH_BACKWARD = KeyValue.getKeyByName("switch_backward");
+  private static final KeyValue KV_SWITCH_CLIPBOARD = KeyValue.getKeyByName("switch_clipboard");
+
+  private void animateSpaceSnapBack()
+  {
+    if (_spaceSnapAnim != null)
+    {
+      _spaceSnapAnim.cancel();
+      _spaceSnapAnim = null;
+    }
+    if (_spaceSlideOffset == 0f)
+    {
+      _isSpaceSlidingLanguage = false;
+      invalidate();
+      return;
+    }
+    ValueAnimator anim = ValueAnimator.ofFloat(_spaceSlideOffset, 0f);
+    _spaceSnapAnim = anim;
+    anim.setDuration(120);
+    anim.addUpdateListener(a -> {
+      _spaceSlideOffset = (Float)a.getAnimatedValue();
+      invalidate();
+    });
+    anim.addListener(new AnimatorListenerAdapter() {
+      @Override
+      public void onAnimationEnd(Animator animation) {
+        _isSpaceSlidingLanguage = false;
+        _spaceSlideOffset = 0f;
+        _spaceSnapAnim = null;
+        invalidate();
+      }
+    });
+    anim.start();
+  }
+
+  private void executeArcAction(ActionArcMenu.ActionType action)
+  {
+    if (action == null || _config == null || _config.handler == null)
+      return;
+    KeyValue kv = null;
+    switch (action)
+    {
+      case HOME: kv = KV_HOME; break;
+      case END: kv = KV_END; break;
+      case UNDO: kv = KV_UNDO; break;
+      case REDO: kv = KV_REDO; break;
+      case SELECT_ALL: kv = KV_SELECT_ALL; break;
+      case CUT: kv = KV_CUT; break;
+      case COPY: kv = KV_COPY; break;
+      case PASTE: kv = KV_PASTE; break;
+      case LANGUAGE_SWITCH: kv = KV_SWITCH_FORWARD; break;
+      case CLIPBOARD: kv = KV_SWITCH_CLIPBOARD; break;
+    }
+    if (kv != null)
+    {
+      _config.handler.key_up(kv, Pointers.Modifiers.EMPTY);
+    }
   }
 }

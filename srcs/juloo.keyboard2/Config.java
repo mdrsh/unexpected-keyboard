@@ -37,6 +37,7 @@ public final class Config
   // From preferences
   /** [null] represent the [system] layout. */
   public List<KeyboardData> layouts;
+  public List<String> layout_ids;
   public boolean show_numpad = false;
   // From the 'numpad_layout' option, also apply to the numeric pane.
   public boolean inverse_numpad = false;
@@ -147,6 +148,7 @@ public final class Config
       keyboardHeightPercent = _prefs.getInt(foldable_unfolded ? "keyboard_height_unfolded" : "keyboard_height", 35);
     }
     layouts = LayoutsPreference.load_from_preferences(res, _prefs);
+    layout_ids = LayoutsPreference.load_layout_ids_from_preferences(_prefs);
     inverse_numpad = _prefs.getString("numpad_layout", "default").equals("low_first");
     String number_row = _prefs.getString("number_row", "no_number_row");
     add_number_row = !number_row.equals("no_number_row");

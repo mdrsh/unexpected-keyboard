@@ -76,6 +76,21 @@ public class LayoutsPreference extends ListGroupPreference<LayoutsPreference.Lay
     return layouts;
   }
 
+  public static List<String> load_layout_ids_from_preferences(SharedPreferences prefs)
+  {
+    List<String> ids = new ArrayList<String>();
+    for (Layout l : load_from_preferences(KEY, prefs, DEFAULT, SERIALIZER))
+    {
+      if (l instanceof NamedLayout)
+        ids.add(((NamedLayout)l).name);
+      else if (l instanceof CustomLayout)
+        ids.add("custom");
+      else // instanceof SystemLayout
+        ids.add("system");
+    }
+    return ids;
+  }
+
   /** Does not call [prefs.commit()]. */
   public static void save_to_preferences(SharedPreferences.Editor prefs, List<Layout> items)
   {
