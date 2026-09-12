@@ -115,10 +115,15 @@ public final class LayoutModifier
       the main layout's script. */
   public static KeyboardData modify_numpad(KeyboardData kw, KeyboardData main_kw)
   {
+    final TreeMap<KeyValue, KeyboardData.PreferredPos> extra_keys = new TreeMap<KeyValue, KeyboardData.PreferredPos>();
+    extra_keys.putAll(globalConfig.extra_keys_param);
+    extra_keys.putAll(globalConfig.extra_keys_custom);
     final int map_digit = KeyModifier.modify_numpad_script(main_kw.numpad_script);
     KeyboardData modified = kw.mapKeys(new KeyboardData.MapKeyValues() {
       public KeyValue apply(KeyValue key, boolean localized)
       {
+        if (localized && globalConfig.isUserModeBottomRow && !extra_keys.containsKey(key))
+          return null;
         switch (key.getKind())
         {
           case Char:
@@ -139,7 +144,7 @@ public final class LayoutModifier
         return modify_key(key);
       }
     });
-    return modified;
+    return attach_switch_mode_key(modified);
   }
 
   /** Modify the pin entry layout. [main_kw] is used to map the digits into the

@@ -118,7 +118,8 @@ public class Keyboard2 extends InputMethodService
   KeyboardData loadNumericLayout()
   {
     return loadNumpad(_config.orientation_landscape ?
-        R.xml.numeric_landscape : R.xml.numeric);
+        (_config.isUserModeBottomRow ? R.xml.numeric_user_landscape : R.xml.numeric_landscape) :
+        (_config.isUserModeBottomRow ? R.xml.numeric_user : R.xml.numeric));
   }
 
   KeyboardData loadPinentry(int layout_id)

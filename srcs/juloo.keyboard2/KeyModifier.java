@@ -26,6 +26,8 @@ public final class KeyModifier
     /* Keys with an empty string are placeholder keys. */
     if (r.getString().length() == 0)
       return null;
+    if (r.hasFlagsAny(KeyValue.FLAG_SHIFT_ONLY))
+      return null;
     return r;
   }
 
@@ -208,6 +210,8 @@ public final class KeyModifier
 
   private static KeyValue apply_shift(KeyValue k)
   {
+    if (k.hasFlagsAny(KeyValue.FLAG_SHIFT_ONLY))
+      k = k.withFlags(k.getFlags() & ~KeyValue.FLAG_SHIFT_ONLY);
     if (_modmap != null)
     {
       KeyValue mapped = _modmap.get(Modmap.M.Shift, k);

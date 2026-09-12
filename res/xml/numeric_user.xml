@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<keyboard bottom_row="false">
+  <modmap>
+    <shift a="1" b="'"/>
+    <shift a="2" b="`"/>
+    <shift a="3" b="°"/>
+    <shift a="4" b="%"/>
+    <shift a="5" b="$"/>
+    <shift a="6" b="€"/>
+    <shift a="7" b="£"/>
+    <shift a="8" b="₴"/>
+    <shift a="9" b="¥"/>
+    <shift a="0" b="…"/>
+
+    <shift a="*" b="×"/>
+    <shift a="×" b="*"/>
+    <shift a="/" b="÷"/>
+    <shift a="÷" b="/"/>
+    <shift a="%" b="‰"/>
+    <shift a="+" b="≈"/>
+    <shift a="-" b="_"/>
+    <shift a="_" b="-"/>
+
+    <shift a=":" b=";"/>
+    <shift a="!" b="¡"/>
+    <shift a="?" b="¿"/>
+  </modmap>
+  <row>
+    <key width="0.75" role="action" key0="@" key1="^" key2="~" key4="!"/>
+    <key width="0.75" role="action" key0="(" key1="&lt;" key2="[" key3="«" key4="{"/>
+    <key key0="7"/>
+    <key key0="8"/>
+    <key key0="9"/>
+    <key width="0.75" role="action" key0="*" key1="√" key2="×" key3="\#" />
+    <key width="0.75" role="action" key0="/" key1="%" key2="№" key3="÷"/>
+  </row>
+  <row>
+    <key width="0.75" role="action" key0=":" key1="&amp;" key2="|" key4="\\"/>
+    <key width="0.75" role="action" key0=")" key1="&gt;" key2="]" key3="»" key4="}"/>
+    <key key0="4"/>
+    <key key0="5" key2="shift ¢"/>
+    <key key0="6" key2="shift ₿"/>
+    <key width="0.75" role="action" key0="+" key1="€" key2="$" key3="±" key4="?"/>
+    <key width="0.75" role="action" key0="-" key1="–" key2="—" key3="_"/>
+  </row>
+  <row>
+    <key width="1.5" role="action" key0="shift" key2="loc capslock"/>
+    <key key0="1"/>
+    <key key0="2"/>
+    <key key0="3"/>
+    <key width="1.5" role="action" key0="backspace" key2="delete"/>
+  </row>
+  <row height="0.95">
+    <key width="1.5" role="action" key0="switch_text"/>
+    <key width="0.75" role="action" key0="," key1=";" key2="&quot;" key4="'"/>
+    <key width="1.5" key0="0" key5="cursor_left" key6="cursor_right" key4="space"/>
+    <key width="0.75" role="action" key0="." key1="“" key2="”" key3="…" key4="`"/>
+    <key width="1.5" role="action" key0="enter" key1="=" key2="action" key3="≈" key4="≠"/>
+  </row>
+</keyboard>

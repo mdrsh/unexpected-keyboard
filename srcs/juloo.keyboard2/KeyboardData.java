@@ -485,7 +485,17 @@ public final class KeyboardData
         flags |= F_LOC;
         key_val = name_loc;
       }
-      ks[index] = KeyValue.getKeyByName(key_val);
+      boolean shift_only = false;
+      String name_shift = stripPrefix(key_val, "shift ");
+      if (name_shift != null)
+      {
+        shift_only = true;
+        key_val = name_shift;
+      }
+      KeyValue kv = KeyValue.getKeyByName(key_val);
+      if (shift_only)
+        kv = kv.withFlags(kv.getFlags() | KeyValue.FLAG_SHIFT_ONLY);
+      ks[index] = kv;
       return (flags << index);
     }
 

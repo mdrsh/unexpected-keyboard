@@ -129,7 +129,8 @@ public final class KeyValue implements Comparable<KeyValue>
   public static final int FLAG_SMALLER_FONT = (1 << FLAGS_OFFSET << 5);
   // Dimmer symbol
   public static final int FLAG_SECONDARY = (1 << FLAGS_OFFSET << 6);
-  // Free: (1 << FLAGS_OFFSET << 7)
+  // Key appears and is usable only when Shift modifier is active
+  public static final int FLAG_SHIFT_ONLY = (1 << FLAGS_OFFSET << 7);
 
   // Ranges for the different components
   private static final int FLAGS_BITS = (0b11111111 << FLAGS_OFFSET); // 8 bits wide
