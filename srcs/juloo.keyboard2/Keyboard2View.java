@@ -7,6 +7,7 @@ import android.graphics.Insets;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.inputmethodservice.InputMethodService;
 import android.os.Build.VERSION;
 import android.util.AttributeSet;
@@ -508,7 +509,18 @@ public class Keyboard2View extends View
         specialFont = false;
       }
     }
+    boolean isImeAction = (kv.getKind() == KeyValue.Kind.Event && kv.getEvent() == KeyValue.Event.ACTION);
+    boolean isSingleCharAction = isImeAction && label != null && label.length() == 1;
+    boolean isFilledGlyph = isSingleCharAction && (label.equals("➤") || label.equals("◀"));
+    if (isSingleCharAction && !isFilledGlyph)
+      textSize *= 1.20f;
     Paint p = tc.label_paint(specialFont, labelColor(kv, isMainKeyDown, isAnyPointerDown, false, false, isAction), textSize);
+    if (isSingleCharAction)
+    {
+      p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+      if (!isFilledGlyph)
+        p.setFakeBoldText(true);
+    }
     canvas.drawText(label, x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
   }
 

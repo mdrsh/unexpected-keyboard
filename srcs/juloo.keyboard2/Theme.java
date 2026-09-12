@@ -235,6 +235,8 @@ public class Theme
         Paint p = special_font ? _special_label_paint : _label_paint;
         p.setColor((color & 0x00FFFFFF) | _label_alpha_bits);
         p.setTextSize(text_size);
+        p.setTypeface(special_font ? _key_font : null);
+        p.setFakeBoldText(false);
         return p;
       }
 
