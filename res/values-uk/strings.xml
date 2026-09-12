@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Поведінка</string>
     <string name="pref_autocapitalisation_title">Автоматичне введення великих літер</string>
     <string name="pref_autocapitalisation_summary">Натиснути Shift на початку речення</string>
+    <string name="pref_delete_space_before_punctuation_title">Видаляти пробіл перед пунктуацією</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Залежно від режиму (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Завжди увімкнено</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Завжди вимкнено</string>
     <string name="pref_vibrate_custom">Спеціальна вібрація</string>
     <string name="pref_vibrate_duration_title">Інтенсивність вібрації</string>
     <string name="pref_category_style">Стиль</string>

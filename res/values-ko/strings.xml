@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">동작</string>
     <string name="pref_autocapitalisation_title">자동 대문자 전환</string>
     <string name="pref_autocapitalisation_summary">문장의 시작에서 Shift 키를 눌러 대문자로 전환합니다.</string>
+    <string name="pref_delete_space_before_punctuation_title">문장 부호 앞 공백 삭제</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">모드에 따라 (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">항상 사용</string>
+    <string name="pref_delete_space_before_punctuation_e_never">사용 안 함</string>
     <string name="pref_vibrate_custom">사용자 정의 진동</string>
     <string name="pref_vibrate_duration_title">진동 강도</string>
     <string name="pref_category_style">스타일</string>

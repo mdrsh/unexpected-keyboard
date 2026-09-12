@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">السلوك</string>
     <string name="pref_autocapitalisation_title">الكتابة التلقائية بالحروف الكبيرة</string>
     <string name="pref_autocapitalisation_summary">اضغط على مفتاح Shift في بداية جملة</string>
+    <string name="pref_delete_space_before_punctuation_title">حذف المسافة قبل علامات الترقيم</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">حسب الوضع (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">مفعّل دائمًا</string>
+    <string name="pref_delete_space_before_punctuation_e_never">معطّل دائمًا</string>
     <string name="pref_vibrate_custom">اهتزاز مخصص</string>
     <string name="pref_vibrate_duration_title">شدّة الاهتزاز</string>
     <string name="pref_category_style">الأسلوب</string>

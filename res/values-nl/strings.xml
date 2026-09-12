@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Gedrag</string>
     <string name="pref_autocapitalisation_title">Automatische starthoofdletter</string>
     <string name="pref_autocapitalisation_summary">Druk Shift aan de begin van een zin</string>
+    <string name="pref_delete_space_before_punctuation_title">Spatie voor leestekens verwijderen</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Afhankelijk van modus (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Altijd ingeschakeld</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Altijd uitgeschakeld</string>
     <string name="pref_vibrate_custom">Aangepaste trilling</string>
     <string name="pref_vibrate_duration_title">Trillingsintensiteit</string>
     <string name="pref_category_style">Stijl</string>

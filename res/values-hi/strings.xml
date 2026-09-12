@@ -2,4 +2,8 @@
 <resources>
         <string name="pref_suggestions_height_title">सुझाव पट्टी की ऊँचाई</string>
     <string name="pref_bottom_row_height_title">स्पेस बार पंक्ति की ऊँचाई</string>
+    <string name="pref_delete_space_before_punctuation_title">विराम चिह्नों से पहले स्पेस हटाएं</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">मोड के अनुसार (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">हमेशा चालू</string>
+    <string name="pref_delete_space_before_punctuation_e_never">हमेशा बंद</string>
 </resources>

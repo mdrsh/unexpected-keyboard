@@ -2,4 +2,8 @@
 <resources>
     <string name="pref_suggestions_height_title">Ehdotuspalkin korkeus</string>
     <string name="pref_bottom_row_height_title">Välilyöntirivin korkeus</string>
+    <string name="pref_delete_space_before_punctuation_title">Poista välilyönti ennen välimerkkiä</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Tilan mukaan (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Aina käytössä</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Ei koskaan käytössä</string>
 </resources>

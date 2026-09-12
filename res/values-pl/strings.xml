@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Zachowanie</string>
     <string name="pref_autocapitalisation_title">Automatyczne wielkie litery</string>
     <string name="pref_autocapitalisation_summary">Naciśnij Shift na początku zdania</string>
+    <string name="pref_delete_space_before_punctuation_title">Usuń spację przed znakami interpunkcyjnymi</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Zależnie od trybu (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Zawsze włączone</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Zawsze wyłączone</string>
     <string name="pref_vibrate_custom">Własna wibracja</string>
     <string name="pref_vibrate_duration_title">Intensywność wibracji</string>
     <string name="pref_category_style">Styl</string>

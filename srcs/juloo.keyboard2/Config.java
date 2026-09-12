@@ -69,6 +69,18 @@ public final class Config
   public float characterSize; // Ratio
   public int theme; // Values are R.style.*
   public boolean autocapitalisation;
+  public enum DeleteSpaceMode
+  {
+    MODE, ALWAYS, NEVER;
+
+    public static DeleteSpaceMode of_string(String s)
+    {
+      if ("always".equals(s)) return ALWAYS;
+      if ("never".equals(s)) return NEVER;
+      return MODE;
+    }
+  }
+  public DeleteSpaceMode delete_space_mode = DeleteSpaceMode.MODE;
   public KeyValue change_method_key_replacement;
   public NumberLayout selected_number_layout;
   public boolean borderConfig;
@@ -196,6 +208,13 @@ public final class Config
       * characterSizeScale;
     theme = getThemeId(res, _prefs.getString("theme", ""));
     autocapitalisation = _prefs.getBoolean("autocapitalisation", true);
+    try {
+      delete_space_mode = DeleteSpaceMode.of_string(_prefs.getString("delete_space_before_punctuation", "mode"));
+    } catch (ClassCastException e) {
+      boolean b = _prefs.getBoolean("delete_space_before_punctuation", true);
+      delete_space_mode = b ? DeleteSpaceMode.MODE : DeleteSpaceMode.NEVER;
+      _prefs.edit().putString("delete_space_before_punctuation", delete_space_mode.name().toLowerCase()).apply();
+    }
     change_method_key_replacement = get_change_method_key_replacement(_prefs);
     extra_keys_param = ExtraKeysPreference.get_extra_keys(_prefs);
     extra_keys_custom = CustomExtraKeysPreference.get(_prefs);
@@ -244,6 +263,18 @@ public final class Config
   {
     isUserModeBottomRow = !isUserModeBottomRow;
     _prefs.edit().putBoolean(PREF_BOTTOM_ROW_USER_MODE, isUserModeBottomRow).apply();
+  }
+
+  public boolean shouldDeleteSpaceBeforePunctuation()
+  {
+    switch (delete_space_mode)
+    {
+      case ALWAYS: return true;
+      case NEVER: return false;
+      case MODE:
+      default:
+        return isUserModeBottomRow;
+    }
   }
 
   private float get_dip_pref(DisplayMetrics dm, String pref_name, float def)
@@ -360,6 +391,20 @@ public final class Config
 
   public static void migrate(SharedPreferences prefs)
   {
+    try
+    {
+      prefs.getString("delete_space_before_punctuation", "mode");
+    }
+    catch (ClassCastException cce)
+    {
+      boolean b = true;
+      try { b = prefs.getBoolean("delete_space_before_punctuation", true); }
+      catch (Exception ignored) {}
+      prefs.edit().remove("delete_space_before_punctuation")
+                  .putString("delete_space_before_punctuation", b ? "mode" : "never")
+                  .commit();
+    }
+
     int saved_version = prefs.getInt("version", 0);
     Logs.debug_config_migration(saved_version, CONFIG_VERSION);
     if (saved_version == CONFIG_VERSION)

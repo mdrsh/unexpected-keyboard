@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Поведение</string>
     <string name="pref_autocapitalisation_title">Автоматическая смена регистра</string>
     <string name="pref_autocapitalisation_summary">Автоматическое нажатие Shift в начале каждого предложения</string>
+    <string name="pref_delete_space_before_punctuation_title">Удалять пробел перед знаками препинания</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">В зависимости от режима (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Всегда включено</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Всегда выключено</string>
     <string name="pref_vibrate_custom">Настройка вибрации</string>
     <string name="pref_vibrate_duration_title">Интенсивность вибрации</string>
     <string name="pref_category_style">Стиль</string>

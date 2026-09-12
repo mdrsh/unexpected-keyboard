@@ -49,6 +49,10 @@
     <string name="pref_category_behavior">鍵盤行為</string>
     <string name="pref_autocapitalisation_title">首字母自動大寫</string>
     <string name="pref_autocapitalisation_summary">在每一行的開始自動大寫第一個字母</string>
+    <string name="pref_delete_space_before_punctuation_title">刪除標點符號前的空格</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">根據模式（geek/user）</string>
+    <string name="pref_delete_space_before_punctuation_e_always">始終啟用</string>
+    <string name="pref_delete_space_before_punctuation_e_never">始終停用</string>
     <string name="pref_change_method_key_replacement_title">在輸入法間切換</string>
     <string name="pref_change_method_key_replacement_e_picker">顯示輸入法切換器（長按）</string>
     <string name="pref_change_method_key_replacement_e_prev">切換到上一個使用的</string>

@@ -32,6 +32,8 @@ public final class KeyEventHandler
   boolean _move_cursor_force_fallback = false;
   /** Whether the space bar automatically enters the best suggestion. */
   boolean _space_bar_auto_complete = false;
+  /** Reference to global configuration. */
+  Config _config;
   /** Remember the action that was handled. This is used by autocorrect. */
   LastAction _last_action = null;
   LastAction _next_last_action = null;
@@ -54,6 +56,7 @@ public final class KeyEventHandler
     _autocap.started(conf, ic);
     _typedword.started(conf, ic);
     _suggestions.started();
+    _config = conf;
     _move_cursor_force_fallback =
       conf.editor_config.should_move_cursor_force_fallback;
     _space_bar_auto_complete = conf.space_bar_auto_complete;
@@ -257,9 +260,55 @@ public final class KeyEventHandler
     InputConnection conn = _recv.getCurrentInputConnection();
     if (conn == null)
       return;
+    if (_config != null && _config.shouldDeleteSpaceBeforePunctuation() && should_remove_space_before(conn, text))
+    {
+      conn.beginBatchEdit();
+      conn.deleteSurroundingText(1, 0);
+      conn.commitText(text, 1);
+      _typedword.remove_surrounding_text(1, 0);
+      _typedword.typed(text);
+      _autocap.char_deleted();
+      _autocap.typed(text);
+      conn.endBatchEdit();
+      return;
+    }
     _autocap.typed(text);
     _typedword.typed(text);
     conn.commitText(text, 1);
+  }
+
+  boolean should_remove_space_before(InputConnection conn, String text)
+  {
+    if (text == null || text.length() == 0)
+      return false;
+    if (!is_space_deleting_punctuation(text.charAt(0)))
+      return false;
+    if (_typedword.is_selection_not_empty())
+      return false;
+    CharSequence before = conn.getTextBeforeCursor(4, 0);
+    if (before == null || before.length() < 2)
+      return false;
+    int len = before.length();
+    char last = before.charAt(len - 1);
+    char prev = before.charAt(len - 2);
+    return (last == ' ' || last == '\u00A0') && !Character.isWhitespace(prev) && !Character.isSpaceChar(prev);
+  }
+
+  static boolean is_space_deleting_punctuation(char c)
+  {
+    switch (c)
+    {
+      case '.':
+      case ',':
+      case '?':
+      case '!':
+      case ':':
+      case ';':
+      case '\u2026': // …
+        return true;
+      default:
+        return false;
+    }
   }
 
   void replace_surrounding_text(int remove_before, int remove_after,

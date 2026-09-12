@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Uzvedība</string>
     <string name="pref_autocapitalisation_title">Automātiski lielie burti</string>
     <string name="pref_autocapitalisation_summary">Piespiest pārslēdzēju teikuma sākumā</string>
+    <string name="pref_delete_space_before_punctuation_title">Dzēst atstarpi pirms pieturzīmēm</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Atkarībā no režīma (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Vienmēr ieslēgts</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Vienmēr izslēgts</string>
     <string name="pref_vibrate_custom">Pielāgota trīcēšana</string>
     <string name="pref_vibrate_duration_title">Trīcēšanas stiprums</string>
     <string name="pref_category_style">Izskata pielāgojumi</string>

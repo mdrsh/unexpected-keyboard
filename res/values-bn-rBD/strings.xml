@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">আচরণ</string>
     <string name="pref_autocapitalisation_title">স্বয়ংক্রিয় মূলধনীকরণ</string>
     <string name="pref_autocapitalisation_summary">বাক্যের শুরুতে Shift চাপুন</string>
+    <string name="pref_delete_space_before_punctuation_title">যতিচিহ্নের আগের স্পেস মুছুন</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">মোড অনুযায়ী (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">সর্বদা চালু</string>
+    <string name="pref_delete_space_before_punctuation_e_never">সর্বদা বন্ধ</string>
     <string name="pref_vibrate_custom">কাস্টম কম্পন</string>
     <string name="pref_vibrate_duration_title">কম্পন তীব্রতা</string>
     <string name="pref_category_style">স্টাইল</string>

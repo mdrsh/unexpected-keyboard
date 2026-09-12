@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Ugali</string>
     <string name="pref_autocapitalisation_title">Automatikong pagkakapitalisa</string>
     <string name="pref_autocapitalisation_summary">Mag-Shift sa simula ng pangungusap</string>
+    <string name="pref_delete_space_before_punctuation_title">Tanggalin ang espasyo bago ang bantas</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Depende sa mode (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Palaging naka-enable</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Palaging naka-disable</string>
     <string name="pref_vibrate_custom">Custom na vibration</string>
     <string name="pref_vibrate_duration_title">Lakas ng vibration</string>
     <string name="pref_category_style">Estilo</string>

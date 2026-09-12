@@ -49,6 +49,10 @@
     <string name="pref_category_behavior">Comportamiento</string>
     <string name="pref_autocapitalisation_title">Mayúsculas automáticas</string>
     <string name="pref_autocapitalisation_summary">Presionar Mayús al principio de una oración</string>
+    <string name="pref_delete_space_before_punctuation_title">Eliminar espacio antes de la puntuación</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Según el mode (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Siempre activado</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Siempre desactivado</string>
     <string name="pref_change_method_key_replacement_title">Cambio de métodos de entrada</string>
     <string name="pref_change_method_key_replacement_e_picker">Mostrar selector de método de entrada (presión larga)</string>
     <string name="pref_change_method_key_replacement_e_prev">Cambiar al último usado</string>

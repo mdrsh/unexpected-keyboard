@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Bổ trợ</string>
     <string name="pref_autocapitalisation_title">Tự động viết hoa</string>
     <string name="pref_autocapitalisation_summary">Nhấn Shift ở đầu câu</string>
+    <string name="pref_delete_space_before_punctuation_title">Xóa dấu cách trước dấu câu</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Tùy theo chế độ (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Luôn bật</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Luôn tắt</string>
     <string name="pref_vibrate_custom">Tùy chỉnh rung phản hồi</string>
     <string name="pref_vibrate_duration_title">Thời gian rung</string>
     <string name="pref_category_style">Kiểu cách</string>

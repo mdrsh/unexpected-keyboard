@@ -2,4 +2,8 @@
 <resources>
     <string name="pref_suggestions_height_title">Ketinggian bar cadangan</string>
     <string name="pref_bottom_row_height_title">Ketinggian baris bar ruang</string>
+    <string name="pref_delete_space_before_punctuation_title">Padam ruang sebelum tanda baca</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Mengikut mod (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Sentiasa didayakan</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Sentiasa dilumpuhkan</string>
 </resources>

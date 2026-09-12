@@ -32,6 +32,10 @@
     <string name="pref_category_behavior">Comportament</string>
     <string name="pref_autocapitalisation_title">Scriere automată cu majuscule</string>
     <string name="pref_autocapitalisation_summary">Autoapăsare Shift la începutul fiecărei propoziții</string>
+    <string name="pref_delete_space_before_punctuation_title">Șterge spațiul dinaintea semnelor de punctuație</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">În funcție de mod (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Întotdeauna activat</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Întotdeauna dezactivat</string>
     <string name="pref_category_style">Stil</string>
     <string name="pref_margin_bottom_title">Marginea de jos</string>
     <string name="pref_keyboard_height_title">Înălțimea tastaturii</string>

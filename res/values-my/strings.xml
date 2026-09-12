@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">ပြမူလုပ်ဆောင်ပုံ</string>
     <string name="pref_autocapitalisation_title">အလိုအလျောက် စာလုံးအကြီးပြောင်းလဲပါ</string>
     <string name="pref_autocapitalisation_summary">စာကြောင်းတကြောင်းဧ။်အစတွင် Shift ခလုတ်ကိုဖိပါ</string>
+    <string name="pref_delete_space_before_punctuation_title">ပုဒ်ဖြတ်ပုဒ်ရပ်ရှေ့ရှိ စာလုံးခြားကို ဖျက်ပါ</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">မုဒ်ပေါ်မူတည်၍ (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">အမြဲဖွင့်ထားမည်</string>
+    <string name="pref_delete_space_before_punctuation_e_never">အမြဲပိတ်ထားမည်</string>
     <string name="pref_vibrate_custom">မိမိစိတ်ကြိုက်တုန်ခါမှု</string>
     <string name="pref_vibrate_duration_title">တုန်ခါခြင်းပြင်းထန်မှုချိန်ညှိရန်</string>
     <string name="pref_category_style">ပုံသဏ္ဍာန်</string>

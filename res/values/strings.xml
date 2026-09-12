@@ -51,6 +51,10 @@
     <string name="pref_category_behavior">Behavior</string>
     <string name="pref_autocapitalisation_title">Automatic capitalisation</string>
     <string name="pref_autocapitalisation_summary">Press Shift at the beginning of a sentence</string>
+    <string name="pref_delete_space_before_punctuation_title">Delete space before punctuation</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Depending on mode (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Always enabled</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Always disabled</string>
     <string name="pref_change_method_key_replacement_title">Switching between input methods</string>
     <string name="pref_change_method_key_replacement_e_picker">Show the input method picker (long press)</string>
     <string name="pref_change_method_key_replacement_e_prev">Switch to last used</string>

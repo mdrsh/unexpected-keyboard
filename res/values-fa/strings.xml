@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">رفتار</string>
     <string name="pref_autocapitalisation_title">بزرگسازی خودکار</string>
     <string name="pref_autocapitalisation_summary">در شروع جملات دگرساز را فشار دهید</string>
+    <string name="pref_delete_space_before_punctuation_title">حذف فاصله قبل از علائم نگارشی</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">بر اساس حالت (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">همیشه فعال</string>
+    <string name="pref_delete_space_before_punctuation_e_never">همیشه غیرفعال</string>
     <string name="pref_vibrate_custom">لرزش سفارشی</string>
     <string name="pref_vibrate_duration_title">شدت لرزش</string>
     <string name="pref_category_style">سبک</string>

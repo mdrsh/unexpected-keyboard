@@ -2,4 +2,8 @@
 <resources>
     <string name="pref_suggestions_height_title">നിർദ്ദേശ ബാറിന്റെ ഉയരം</string>
     <string name="pref_bottom_row_height_title">സ്പേസ് ബാർ വരിയുടെ ഉയരം</string>
+    <string name="pref_delete_space_before_punctuation_title">ചിഹ്നങ്ങൾക്ക് മുമ്പുള്ള സ്പേസ് ഒഴിവാക്കുക</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">മോഡ് അനുസരിച്ച് (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">എപ്പോഴും പ്രവർത്തനക്ഷമം</string>
+    <string name="pref_delete_space_before_punctuation_e_never">എപ്പോഴും പ്രവർത്തനരഹിതം</string>
 </resources>

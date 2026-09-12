@@ -27,6 +27,10 @@
     <string name="pref_category_behavior">nasin pali</string>
     <string name="pref_autocapitalisation_title">sitelen suli kepeken pali ala</string>
     <string name="pref_autocapitalisation_summary">ni li luka e nena Shift lon nimi nanpa wan</string>
+    <string name="pref_delete_space_before_punctuation_title">weka e kon poka pi sitelen pini</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">nasin ilo (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">lon tenpo ale</string>
+    <string name="pref_delete_space_before_punctuation_e_never">ala lon tenpo ale</string>
     <string name="pref_theme">nasin lukin</string>
     <string name="pref_theme_e_dark">suno ala</string>
     <string name="pref_theme_e_light">suno</string>

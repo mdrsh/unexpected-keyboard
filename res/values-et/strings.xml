@@ -69,6 +69,10 @@
     <string name="pref_category_behavior">Käitumine</string>
     <string name="pref_autocapitalisation_title">Automaatsed suurtähed</string>
     <string name="pref_autocapitalisation_summary">Vajuta lause alguses Shift-klahvi</string>
+    <string name="pref_delete_space_before_punctuation_title">Kustuta tühik enne kirjavahemärki</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Sõltuvalt režiimist (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Alati sisse lülitatud</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Alati välja lülitatud</string>
     <string name="pref_change_method_key_replacement_title">Sisendmeetodite vahetamine</string>
     <string name="pref_change_method_key_replacement_e_picker">Näita sisendmeetodite valijat (pika vajutusega)</string>
     <string name="pref_change_method_key_replacement_e_prev">Vali viimatikasutatu</string>

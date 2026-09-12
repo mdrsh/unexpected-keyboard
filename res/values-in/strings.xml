@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Perilaku</string>
     <string name="pref_autocapitalisation_title">Kapitalisasi otomatis</string>
     <string name="pref_autocapitalisation_summary">Tekan Shift di awal kalimat</string>
+    <string name="pref_delete_space_before_punctuation_title">Hapus spasi sebelum tanda baca</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Tergantung mode (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Selalu aktif</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Selalu nonaktif</string>
     <string name="pref_vibrate_custom">Getaran kustom</string>
     <string name="pref_vibrate_duration_title">Intensitas getaran</string>
     <string name="pref_category_style">Gaya</string>

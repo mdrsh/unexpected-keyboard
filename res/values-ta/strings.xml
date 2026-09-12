@@ -49,6 +49,10 @@
     <string name="pref_category_behavior">ஒழுக்கம்</string>
     <string name="pref_autocapitalisation_title">தானாகவே பெரிய எழுத்தாக மாறிக்கொள்ளும்</string>
     <string name="pref_autocapitalisation_summary">ஒரு சொற்றொடரின் துவக்கத்தில் மாற்றியை அழுத்தவும்</string>
+    <string name="pref_delete_space_before_punctuation_title">நிறுத்தற்குறிகளுக்கு முன் உள்ள இடைவெளியை நீக்கு</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">பயன்முறையைப் பொறுத்து (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">எப்போதும் இயக்கத்தில்</string>
+    <string name="pref_delete_space_before_punctuation_e_never">எப்போதும் முடக்கத்தில்</string>
     <string name="pref_change_method_key_replacement_title">உள்ளிடு முறைகளுக்கிடையில் மாற்றுதல்</string>
     <string name="pref_change_method_key_replacement_e_picker">உள்ளிடு முறையை எடுப்பவர் ஐ காட்டவும்(நீண்ட அழுத்தம்)</string>
     <string name="pref_change_method_key_replacement_e_prev">இறுதியில் பயன்படுத்தியதற்கு மாறவும்</string>

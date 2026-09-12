@@ -54,6 +54,11 @@ public final class Autocapitalisation
     callback(false);
   }
 
+  public void char_deleted()
+  {
+    if (_cursor > 0) _cursor--;
+  }
+
   public void event_sent(int code, int meta)
   {
     if (meta != 0)

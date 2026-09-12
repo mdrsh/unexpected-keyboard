@@ -39,6 +39,10 @@
     <string name="pref_category_behavior">Comportamento</string>
     <string name="pref_autocapitalisation_title">Maiuscole Automatiche</string>
     <string name="pref_autocapitalisation_summary">Premi Shift all\'inizio di una frase</string>
+    <string name="pref_delete_space_before_punctuation_title">Elimina spazio prima della punteggiatura</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">In base alla modalità (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Sempre attivo</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Sempre disattivo</string>
     <string name="pref_vibrate_custom">Vibrazione personalizzata</string>
     <string name="pref_vibrate_duration_title">Intensità della vibrazione</string>
     <string name="pref_category_style">Stile</string>

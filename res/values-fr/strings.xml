@@ -49,6 +49,10 @@
     <string name="pref_category_behavior">Comportement</string>
     <string name="pref_autocapitalisation_title">Majuscule automatique</string>
     <string name="pref_autocapitalisation_summary">Activer Shift au début des phrases</string>
+    <string name="pref_delete_space_before_punctuation_title">Supprimer l\'espace avant la ponctuation</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">Selon le mode (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">Toujours activé</string>
+    <string name="pref_delete_space_before_punctuation_e_never">Toujours désactivé</string>
     <string name="pref_change_method_key_replacement_title">Changer de méthode de saisie</string>
     <string name="pref_change_method_key_replacement_e_picker">Afficher le sélecteur de méthode de saisie (appui long)</string>
     <string name="pref_change_method_key_replacement_e_prev">Changer vers le dernier utilisé</string>

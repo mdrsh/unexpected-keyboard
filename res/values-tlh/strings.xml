@@ -49,4 +49,8 @@
     <string name="key_descr_selectAll">Hoch yIwIv</string>
     <string name="key_descr_undo">chenmoHHa\'</string>
     <string name="clipboard_remove_confirmed">HIja\'</string>
+    <string name="pref_delete_space_before_punctuation_title">De\' vIlo\' meq De\'</string>
+    <string name="pref_delete_space_before_punctuation_e_mode">pat (geek/user)</string>
+    <string name="pref_delete_space_before_punctuation_e_always">reH chu\'</string>
+    <string name="pref_delete_space_before_punctuation_e_never">not chu\'</string>
 </resources>
