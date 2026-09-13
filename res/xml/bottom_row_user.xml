@@ -3,6 +3,6 @@
   <key width="1.7" role="action" key0="switch_numeric" key1="loc switch_greekmath" key2="loc meta" key3="loc switch_clipboard" key4="ctrl"/>
   <key width="1.1" role="action" key0="," key1="loc alt" key2="loc change_method" key3="switch_emoji" key4="config"/>
   <key width="4.4" role="space_bar" key0="space" key5="cursor_left" key6="cursor_right"/>
-  <key width="1.1" role="action" key0="." key1="!" key2="?"/>
+  <key width="1.1" role="action" key0="." key1="!" key2="?" key3="nbsp"/>
   <key width="1.7" role="action" key0="enter" key1="loc voice_typing" key2="action"/>
 </row>
