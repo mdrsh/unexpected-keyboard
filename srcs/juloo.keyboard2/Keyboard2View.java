@@ -253,7 +253,7 @@ public class Keyboard2View extends View
         else if (_isSpaceSlidingLanguage && upPointerId == _potentialArcPointerId)
         {
           float kw = _spaceKeyWidth > 0 ? _spaceKeyWidth : 300f;
-          float threshold = kw * 0.35f;
+          float threshold = kw * 0.30f;
           if (_spaceSlideOffset <= -threshold)
           {
             vibrate();
@@ -340,7 +340,7 @@ public class Keyboard2View extends View
             float curX = event.getX(arcIdx);
             _spaceSlideOffset = curX - _potentialArcDownX;
             float kw = _spaceKeyWidth > 0 ? _spaceKeyWidth : 300f;
-            float threshold = kw * 0.35f;
+            float threshold = kw * 0.30f;
             if (Math.abs(_spaceSlideOffset) >= threshold)
             {
               if (!_hapticFiredForThreshold)
@@ -901,7 +901,7 @@ public class Keyboard2View extends View
 
       int total = _config.layouts.size();
       float spacing = Math.max(kw * 0.55f, p.measureText(label) / 2f + 40f);
-      float threshold = kw * 0.35f;
+      float threshold = kw * 0.30f;
       boolean reached = Math.abs(_spaceSlideOffset) >= threshold;
 
       if (_spaceSlideOffset < 0)
