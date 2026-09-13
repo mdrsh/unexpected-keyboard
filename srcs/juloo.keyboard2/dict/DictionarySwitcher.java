@@ -32,7 +32,7 @@ public final class DictionarySwitcher
       labels.add(_sd.get_display_name(name));
     ArrayAdapter adapter =
       new ArrayAdapter(_ims, android.R.layout.simple_list_item_1, labels);
-    AlertDialog dialog = new AlertDialog.Builder(_ims)
+    AlertDialog dialog = Utils.new_alert_dialog_builder(_ims)
       .setTitle(R.string.dictionary_switcher_title)
       .setAdapter(adapter, new DialogInterface.OnClickListener(){
         public void onClick(DialogInterface _d, int which)

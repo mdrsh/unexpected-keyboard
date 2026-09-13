@@ -1,11 +1,14 @@
 package juloo.keyboard2;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Insets;
 import android.inputmethodservice.InputMethodService;
 import android.os.Build.VERSION;
 import android.os.IBinder;
+import android.util.TypedValue;
+import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -35,6 +38,26 @@ public final class Utils
   {
     show_dialog_on_ime(dialog,
         ims.getWindow().getWindow().getDecorView().getWindowToken());
+  }
+
+  public static AlertDialog.Builder new_alert_dialog_builder(Context context)
+  {
+    TypedValue outValue = new TypedValue();
+    boolean isLight = false;
+    if (context.getTheme().resolveAttribute(android.R.attr.isLightTheme, outValue, true))
+    {
+      isLight = (outValue.data != 0);
+    }
+    else
+    {
+      ContextThemeWrapper w = new ContextThemeWrapper(context, Config.globalConfig().theme);
+      if (w.getTheme().resolveAttribute(android.R.attr.isLightTheme, outValue, true))
+        isLight = (outValue.data != 0);
+    }
+    int themeResId = isLight
+        ? android.R.style.Theme_DeviceDefault_Light_Dialog_Alert
+        : android.R.style.Theme_DeviceDefault_Dialog_Alert;
+    return new AlertDialog.Builder(context, themeResId);
   }
 
   public static void show_dialog_on_ime(AlertDialog dialog, IBinder token)

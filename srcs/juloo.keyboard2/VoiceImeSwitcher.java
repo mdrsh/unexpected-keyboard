@@ -58,7 +58,7 @@ class VoiceImeSwitcher
   {
     List<String> ime_display_names = get_ime_display_names(ims, imes);
     ArrayAdapter layouts = new ArrayAdapter(ims, android.R.layout.simple_list_item_1, ime_display_names);
-    AlertDialog dialog = new AlertDialog.Builder(ims)
+    AlertDialog dialog = Utils.new_alert_dialog_builder(ims)
       .setAdapter(layouts, new DialogInterface.OnClickListener(){
         public void onClick(DialogInterface _dialog, int which)
         {

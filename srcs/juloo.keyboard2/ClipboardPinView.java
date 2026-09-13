@@ -131,7 +131,7 @@ public final class ClipboardPinView extends NonScrollListView
             @Override
             public void onClick(View v)
             {
-              AlertDialog d = new AlertDialog.Builder(getContext())
+              AlertDialog d = Utils.new_alert_dialog_builder(getContext())
                 .setTitle(R.string.clipboard_remove_confirm)
                 .setPositiveButton(R.string.clipboard_remove_confirmed,
                     new DialogInterface.OnClickListener(){
