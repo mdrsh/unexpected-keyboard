@@ -693,7 +693,7 @@ public class Keyboard2View extends View
           drawLabel(canvas, k.keys[0], keyW / 2f + x, labelY, keyH, isMainKeyDown, isKeyDown, tc_key,
               row.is_number_row ? NUMBER_ROW_LABEL_SCALE : 1.0f, isAction);
         }
-        boolean isLightSubLabel = row.is_number_row || !isLetterKey(k);
+        boolean isLightSubLabel = row.is_number_row || (k.role != KeyboardData.Key.Role.Normal);
         boolean isMainSpaceBar = k.role == KeyboardData.Key.Role.Space_bar && _keyboard.bottom_row;
         if (isMainSpaceBar)
           _spaceKeyWidth = keyW;
@@ -748,19 +748,6 @@ public class Keyboard2View extends View
     canvas.clipRect(clipl, clipt, clipr, clipb);
     canvas.drawRoundRect(_tmpRect, r, r, paint);
     canvas.restore();
-  }
-
-  private static boolean isLetterKey(KeyboardData.Key k)
-  {
-    if (k.role != KeyboardData.Key.Role.Normal)
-      return false;
-    KeyValue mainKey = k.keys[0];
-    if (mainKey == null)
-      return false;
-    if (mainKey.getKind() == KeyValue.Kind.Char)
-      return Character.isLetter(mainKey.getChar());
-    String s = mainKey.getString();
-    return s.length() > 0 && Character.isLetter(s.charAt(0));
   }
 
   private static boolean isActionKey(KeyboardData.Key k)
