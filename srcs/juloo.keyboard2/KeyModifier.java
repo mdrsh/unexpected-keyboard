@@ -9,6 +9,8 @@ public final class KeyModifier
   /** The optional modmap takes priority over modifiers usual behaviors. Set to
       [null] to disable. */
   private static Modmap _modmap = null;
+  private static final KeyValue KV_SEMICOLON = KeyValue.getKeyByName(";");
+  private static final KeyValue KV_COLON = KeyValue.getKeyByName(":");
   public static void set_modmap(Modmap mm)
   {
     _modmap = mm;
@@ -217,6 +219,22 @@ public final class KeyModifier
       KeyValue mapped = _modmap.get(Modmap.M.Shift, k);
       if (mapped != null)
         return mapped;
+    }
+    Config cfg = Config.globalConfig();
+    if (cfg != null && cfg.isUserModeBottomRow)
+    {
+      if (k.getKind() == KeyValue.Kind.Char)
+      {
+        char c = k.getChar();
+        if (c == ',') return KV_SEMICOLON;
+        if (c == '.') return KV_COLON;
+      }
+      else if (k.getKind() == KeyValue.Kind.String)
+      {
+        String s = k.getString();
+        if (s.equals(",")) return KV_SEMICOLON;
+        if (s.equals(".")) return KV_COLON;
+      }
     }
     KeyValue r = ComposeKey.apply(ComposeKeyData.shift, k);
     if (r != null)

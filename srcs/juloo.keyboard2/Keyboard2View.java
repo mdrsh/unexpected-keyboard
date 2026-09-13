@@ -803,6 +803,7 @@ public class Keyboard2View extends View
 
   private static final float NUMBER_ROW_LABEL_SCALE = 0.8f;
   private static final float NUMBER_ROW_LABEL_Y_OFFSET = -0.10f;
+  private static final float PUNCTUATION_LABEL_Y_OFFSET = -0.05f;
 
   private void drawLabel(Canvas canvas, KeyValue kv, float x, float y,
       float keyH, boolean isMainKeyDown, boolean isAnyPointerDown, Theme.Computed.Key tc, float scale, boolean isActionKey)
@@ -906,7 +907,11 @@ public class Keyboard2View extends View
       return;
     }
 
-    canvas.drawText(label, x, (keyH - p.ascent() - p.descent()) / 2f + y, p);
+    float textY = (keyH - p.ascent() - p.descent()) / 2f + y;
+    if ((_config == null || _config.isUserModeBottomRow) &&
+        (label.equals(",") || label.equals(".") || label.equals(";") || label.equals(":")))
+      textY += PUNCTUATION_LABEL_Y_OFFSET * keyH;
+    canvas.drawText(label, x, textY, p);
   }
 
   private static String getLanguageLabel(KeyboardData kb)
