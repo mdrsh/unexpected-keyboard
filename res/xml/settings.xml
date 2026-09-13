@@ -15,7 +15,7 @@
   </PreferenceCategory>
   <PreferenceCategory android:title="@string/pref_category_suggestions">
     <CheckBoxPreference android:key="suggestions" android:title="@string/pref_suggestions_title" android:summary="@string/pref_suggestions_summary" android:defaultValue="true"/>
-    <juloo.keyboard2.prefs.IntSlideBarPreference android:key="suggestions_height" android:title="@string/pref_suggestions_height_title" android:summary="%s%%" android:defaultValue="75" min="60" max="100" android:dependency="suggestions"/>
+    <juloo.keyboard2.prefs.IntSlideBarPreference android:key="suggestions_height" android:title="@string/pref_suggestions_height_title" android:summary="%s%%" android:defaultValue="75" min="50" max="100" android:dependency="suggestions"/>
     <CheckBoxPreference android:key="space_bar_auto_complete" android:title="@string/pref_space_bar_auto_complete_title" android:summary="@string/pref_space_bar_auto_complete_summary" android:defaultValue="false"/>
   </PreferenceCategory>
   <PreferenceCategory android:title="@string/pref_category_typing">
