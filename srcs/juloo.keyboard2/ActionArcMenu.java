@@ -72,17 +72,17 @@ public final class ActionArcMenu
   private Typeface _keyFont = null;
 
   private static final float[] DIVIDER_ANGLES = new float[]{
-    155f, 180f, 204f, 218f, 250f, 270f, 316f, 360f, 385f
+    155f, 180f, 204f, 218f, 250f, 270f, 315f, 360f, 385f
   };
 
-  // 8 action sectors with fine-tuned Exi proportions:
+  // 8 action sectors:
   // - Sector 0: Home (<), 155° to 180° (25°)
   // - Sector 1: Undo (Z), 180° to 204° (24°)
-  // - Sector 2: Redo (Y), 204° to 218° (14°, reduced by ~1/3 to fit letter snugly)
-  // - Sector 3: Select All (A), 218° to 250° (32°, same size, shifted left)
-  // - Sector 4: Cut (X), 250° to 270° (20°, same size, shifted left)
-  // - Sector 5: Copy (C), 270° to 316° (46°, +4° from saved Y sector)
-  // - Sector 6: Paste (V), 316° to 360° (44°, +4° from saved Y sector)
+  // - Sector 2: Redo (Y), 204° to 218° (14°)
+  // - Sector 3: Select All (A), 218° to 250° (32°)
+  // - Sector 4: Cut (X), 250° to 270° (20°)
+  // - Sector 5: Copy (C), 270° to 315° (45°, equal split)
+  // - Sector 6: Paste (V), 315° to 360° (45°, equal split)
   // - Sector 7: End (>), 360° to 385° (25°)
   private final Sector[] _sectors = new Sector[]{
     new Sector(ActionType.HOME, "home", 155f, 25f),
@@ -90,14 +90,13 @@ public final class ActionArcMenu
     new Sector(ActionType.REDO, "Y", 204f, 14f),
     new Sector(ActionType.SELECT_ALL, "A", 218f, 32f),
     new Sector(ActionType.CUT, "X", 250f, 20f),
-    new Sector(ActionType.COPY, "C", 270f, 46f),
-    new Sector(ActionType.PASTE, "V", 316f, 44f),
+    new Sector(ActionType.COPY, "C", 270f, 45f),
+    new Sector(ActionType.PASTE, "V", 315f, 45f),
     new Sector(ActionType.END, "end", 360f, 25f)
   };
 
   public ActionArcMenu()
   {
-    _dimPaint.setColor(0xB8000000);
     _dimPaint.setStyle(Paint.Style.FILL);
 
     _fillPaint.setStyle(Paint.Style.FILL);
@@ -133,15 +132,15 @@ public final class ActionArcMenu
     if (_density <= 0f)
       _density = 1f;
 
-    _dividerPaint.setStrokeWidth(2f * _density);
+    _dividerPaint.setStrokeWidth(1f * _density);
 
-    // Center clipboard circle: reduced by 10% from 35.2dp -> 31.7dp
+    // Center clipboard circle: 31.7dp
     _centerRadius = 31.7f * _density;
 
-    // Visual gap between center circle and sectors: reduced by 30% from 12dp -> 8.4dp
-    float gapFromCircle = 8.4f * _density;
-    _sectorInnerRadius = _centerRadius + gapFromCircle; // ~40.1dp
-    // Outer boundary increased by ~12.5% (129dp -> 145dp)
+    // Visual gap between center circle and sectors: increased 3x (from 8.4dp -> 25.2dp)
+    float gapFromCircle = 25.2f * _density;
+    _sectorInnerRadius = _centerRadius + gapFromCircle; // ~56.9dp
+    // Outer boundary (145dp)
     _sectorOuterRadius = 145f * _density;
 
     _centerArcX = touchX;
@@ -169,7 +168,8 @@ public final class ActionArcMenu
     float dist = (float)Math.hypot(dx, dy);
 
     // 1. Center circle zone (Clipboard Manager):
-    if (dist <= _centerRadius + 4f * _density)
+    // Radius of ~24dp leaves the entire gap and outer circle sensitive to sectors
+    if (dist <= _centerRadius * 0.75f)
     {
       _hoveredIndex = INDEX_CENTER;
     }
@@ -247,10 +247,31 @@ public final class ActionArcMenu
     if (!_isActive)
       return;
 
-    // 1. Full translucent dark background
+    // 1. Resolve colors strictly from theme
+    int baseBg = (theme.colorKeyboard != 0) ? theme.colorKeyboard :
+                 (theme.colorKey != 0 ? theme.colorKey : theme.colorKeyAction);
+    int dimColor = (baseBg & 0x00FFFFFF) | 0xD8000000;
+    _dimPaint.setColor(dimColor);
     canvas.drawRect(0, 0, _viewWidth, _viewHeight, _dimPaint);
 
-    int activeColor = (theme.colorKeyActivated != 0) ? theme.colorKeyActivated : 0xFF1E88E5;
+    int activeColor;
+    if (theme.colorKeyActivated != 0 && theme.colorKeyActivated != theme.colorKeyboard)
+      activeColor = theme.colorKeyActivated;
+    else if (theme.activatedColor != 0)
+      activeColor = theme.activatedColor;
+    else if (theme.colorKeyAction != 0)
+      activeColor = theme.colorKeyAction;
+    else
+      activeColor = theme.colorKey;
+
+    int dividerColor = (theme.subLabelNumberRowColor != 0) ? theme.subLabelNumberRowColor :
+                       (theme.subLabelColor != 0 ? theme.subLabelColor : theme.labelColor);
+
+    int textColor = (theme.labelColor != 0) ? theme.labelColor :
+                    (theme.actionLabelColor != 0 ? theme.actionLabelColor : theme.pressedColor);
+
+    int centerNormalColor = (theme.colorKey != 0) ? theme.colorKey :
+                            (theme.colorKeyAction != 0 ? theme.colorKeyAction : baseBg);
 
     _sectorRectOuter.set(_centerArcX - _sectorOuterRadius, _centerArcY - _sectorOuterRadius,
                          _centerArcX + _sectorOuterRadius, _centerArcY + _sectorOuterRadius);
@@ -274,7 +295,7 @@ public final class ActionArcMenu
     }
 
     // 3. Radial divider lines (spokes) between sectors
-    _dividerPaint.setColor(0x80FFFFFF);
+    _dividerPaint.setColor(dividerColor);
     for (float angle : DIVIDER_ANGLES)
     {
       double rad = Math.toRadians(angle);
@@ -289,6 +310,7 @@ public final class ActionArcMenu
 
     // 4. Draw sector labels near the outer edge
     float rLabel = _sectorOuterRadius - 18f * _density;
+    _textPaint.setColor(textColor);
     for (int i = 0; i < _sectors.length; i++)
     {
       Sector s = _sectors[i];
@@ -317,7 +339,6 @@ public final class ActionArcMenu
       else
         baseSize = 22f * _density;
 
-      _textPaint.setColor(0xFFFFFFFF);
       _textPaint.setTextSize(baseSize);
       float textY = ly - (_textPaint.ascent() + _textPaint.descent()) / 2f;
       canvas.drawText(s.label, lx, textY, _textPaint);
@@ -327,19 +348,12 @@ public final class ActionArcMenu
     boolean isCenterHovered = (_hoveredIndex == INDEX_CENTER);
     float r = _centerRadius;
 
-    _fillPaint.setColor(isCenterHovered ? activeColor : 0xFF242830);
+    _fillPaint.setColor(isCenterHovered ? activeColor : centerNormalColor);
     canvas.drawCircle(_centerArcX, _centerArcY, r, _fillPaint);
-
-    if (!isCenterHovered)
-    {
-      _centerStrokePaint.setColor(0xFF4A5260);
-      _centerStrokePaint.setStrokeWidth(2f * _density);
-      canvas.drawCircle(_centerArcX, _centerArcY, r, _centerStrokePaint);
-    }
 
     _clipboardPaint.setTypeface(_keyFont != null ? _keyFont : Typeface.DEFAULT);
     _clipboardPaint.setTextSize(_centerRadius * 0.70f);
-    _clipboardPaint.setColor(0xFFFFFFFF);
+    _clipboardPaint.setColor(textColor);
     float textY = _centerArcY - (_clipboardPaint.ascent() + _clipboardPaint.descent()) / 2f;
     canvas.drawText(_keyFont != null ? "\uE017" : "📋", _centerArcX, textY, _clipboardPaint);
   }

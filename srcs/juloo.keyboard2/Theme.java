@@ -12,6 +12,7 @@ import android.util.AttributeSet;
 public class Theme
 {
   // Key colors
+  public final int colorKeyboard;
   public final int colorKey;
   public final int colorKeyActivated;
   public final int colorKeyAction;
@@ -59,7 +60,7 @@ public class Theme
     colorKeyActivated = s.getColor(R.styleable.keyboard_colorKeyActivated, 0);
     colorKeyAction = s.getColor(R.styleable.keyboard_colorKeyAction, colorKey);
     colorKeySpaceBar = s.getColor(R.styleable.keyboard_colorKeySpaceBar, colorKey);
-    // colorKeyboard = s.getColor(R.styleable.keyboard_colorKeyboard, 0);
+    colorKeyboard = s.getColor(R.styleable.keyboard_colorKeyboard, 0);
     colorNavBar = s.getColor(R.styleable.keyboard_navigationBarColor, 0);
     isLightNavBar = s.getBoolean(R.styleable.keyboard_windowLightNavigationBar, false);
     labelColor = s.getColor(R.styleable.keyboard_colorLabel, 0);

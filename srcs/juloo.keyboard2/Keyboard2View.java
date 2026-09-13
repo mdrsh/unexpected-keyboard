@@ -365,10 +365,14 @@ public class Keyboard2View extends View
             float distUp = isUpward ? -dy : 0f;
             float distSide = Math.abs(dx);
 
+            // Cone of 25 degrees from vertical on each side (50 degrees total cone):
+            // tan(25°) ≈ 0.4663f
+            boolean isWithinArcCone = isUpward && (distSide <= distUp * 0.4663f);
+
             if (curY < _potentialArcMinY)
             {
               _potentialArcMinY = curY;
-              if (distSide < _config.swipe_dist_px * 0.4f)
+              if (isWithinArcCone)
                 _potentialArcTurnX = curX;
             }
 
@@ -378,15 +382,15 @@ public class Keyboard2View extends View
             boolean hasMultipleLayouts = (_config != null && _config.layouts != null && _config.layouts.size() > 1);
 
             // Sideways turn after moving up ("Г" / "Т" gesture)
-            boolean isTurnSideways = (turnDist >= _config.swipe_dist_px * 0.5f && distUp >= _config.swipe_dist_px * 0.4f);
+            boolean isTurnSideways = (turnDist >= _config.swipe_dist_px * 0.5f && distUp >= _config.swipe_dist_px * 0.4f && !isWithinArcCone);
 
             // Horizontal slide on spacebar (within spacebar area, low vertical movement)
             boolean isSpaceHorizontal = _potentialArcIsSpace && hasMultipleLayouts &&
                 (distUp < _config.swipe_dist_px * 0.45f && Math.abs(dy) < _config.swipe_dist_px * 0.8f) &&
                 (distSide >= _config.swipe_dist_px * 0.35f);
 
-            // Diagonal swipe (<= 60 degrees from horizontal) or horizontal slide when not spacebar/single layout
-            boolean isDiagonal = (!isUpward || distSide > distUp * 0.57735f) && (distSide >= _config.swipe_dist_px * 0.5f);
+            // Diagonal swipe (outside 50-degree upward cone) or horizontal slide when not spacebar/single layout
+            boolean isDiagonal = !isWithinArcCone && (distSide >= _config.swipe_dist_px * 0.5f);
 
             if (isSpaceHorizontal)
             {
@@ -403,7 +407,7 @@ public class Keyboard2View extends View
               _pointers.switchToSlider(_potentialArcPointerId, curX, curY, slideDx);
               _potentialArcPointerId = -1;
             }
-            else if (isUpward && (distSide <= distUp * 0.57735f))
+            else if (isWithinArcCone)
             {
               if (curY <= triggerY)
               {
