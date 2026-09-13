@@ -389,8 +389,10 @@ public class Keyboard2View extends View
                 (distUp < _config.swipe_dist_px * 0.45f && Math.abs(dy) < _config.swipe_dist_px * 0.8f) &&
                 (distSide >= _config.swipe_dist_px * 0.35f);
 
-            // Diagonal swipe (outside 50-degree upward cone) or horizontal slide when not spacebar/single layout
-            boolean isDiagonal = !isWithinArcCone && (distSide >= _config.swipe_dist_px * 0.5f);
+            // Diagonal swipe (outside 50-degree upward cone)
+            // On key '0', only upper/horizontal diagonals switch to slider, so downward swipes (for space) are not blocked
+            boolean isDownwardOnZero = !_potentialArcIsSpace && (dy > _config.swipe_dist_px * 0.3f);
+            boolean isDiagonal = !isWithinArcCone && !isDownwardOnZero && (distSide >= _config.swipe_dist_px * 0.5f);
 
             if (isSpaceHorizontal)
             {
@@ -400,6 +402,10 @@ public class Keyboard2View extends View
               _pointers.cancelPointer(_potentialArcPointerId);
               invalidate();
               return (true);
+            }
+            else if (isDownwardOnZero)
+            {
+              _potentialArcPointerId = -1;
             }
             else if (isTurnSideways || isDiagonal)
             {

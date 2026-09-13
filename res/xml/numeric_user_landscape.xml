@@ -62,7 +62,7 @@
   <row height="0.95">
     <key width="1.5" role="action" key0="switch_text"/>
     <key role="action" key0="," key1=";" key2="&quot;" key4="'"/>
-    <key width="2" key0="0" key5="cursor_left" key6="cursor_right" key4="space"/>
+    <key width="2" key0="0" key5="cursor_left" key6="cursor_right" key8="space"/>
     <key width="1.5" shift="4" role="action" key0="." key1="“" key2="”" key3="…" key4="`"/>
     <key width="1.5" key0="0"/>
     <key width="1.5" role="action" key0="enter" key1="=" key2="action" key3="≈" key4="≠"/>
