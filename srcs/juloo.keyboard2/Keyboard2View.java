@@ -849,7 +849,7 @@ public class Keyboard2View extends View
     if (isSingleCharAction && !isFilledGlyph)
       textSize *= 1.20f;
     Paint p = tc.label_paint(specialFont, labelColor(kv, isMainKeyDown, isAnyPointerDown, false, false, isAction), textSize);
-    if (isSingleCharAction)
+    if (isSingleCharAction || (label != null && label.equals("✓")))
     {
       p.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
       if (!isFilledGlyph)

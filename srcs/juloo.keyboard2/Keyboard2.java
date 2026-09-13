@@ -51,6 +51,7 @@ public class Keyboard2 extends InputMethodService
   private Dictionaries _dictionaries;
   private ViewGroup _emojiPane = null;
   private ViewGroup _clipboard_pane = null;
+  private View _currentInputView = null;
   private Handler _handler;
 
   private Config _config;
@@ -278,6 +279,7 @@ public class Keyboard2 extends InputMethodService
   @Override
   public void setInputView(View v)
   {
+    _currentInputView = v;
     ViewParent parent = v.getParent();
     if (parent != null && parent instanceof ViewGroup)
       ((ViewGroup)parent).removeView(v);
@@ -482,7 +484,18 @@ public class Keyboard2 extends InputMethodService
         case ACTION:
           InputConnection conn = getCurrentInputConnection();
           if (conn != null)
-            conn.performEditorAction(_config.editor_config.actionId);
+          {
+            int actionId = _config.editor_config.actionId;
+            if (actionId != EditorInfo.IME_ACTION_UNSPECIFIED && actionId != EditorInfo.IME_ACTION_NONE)
+              conn.performEditorAction(actionId);
+            else
+            {
+              conn.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+              conn.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+            }
+          }
+          if (_currentInputView == _emojiPane || _currentInputView == _clipboard_pane)
+            setInputView(_keyboard_container_view);
           break;
 
         case SWITCH_FORWARD:
