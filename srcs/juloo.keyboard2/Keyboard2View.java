@@ -70,6 +70,8 @@ public class Keyboard2View extends View
   private float _potentialArcMinY = 0f;
   private float _potentialArcTurnX = 0f;
   private boolean _potentialArcIsSpace = false;
+  private float _potentialArcKeyTopY = 0f;
+  private float _potentialArcExitX = -1f;
   private boolean _isSpaceSlidingLanguage = false;
   private float _spaceSlideOffset = 0f;
   private float _spaceKeyWidth = 0f;
@@ -243,7 +245,7 @@ public class Keyboard2View extends View
           invalidate();
           if (action != null)
           {
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            vibrate();
             executeArcAction(action);
           }
           return (true);
@@ -254,7 +256,7 @@ public class Keyboard2View extends View
           float threshold = kw * 0.35f;
           if (_spaceSlideOffset <= -threshold)
           {
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            vibrate();
             executeArcAction(ActionArcMenu.ActionType.LANGUAGE_SWITCH);
             _isSpaceSlidingLanguage = false;
             _spaceSlideOffset = 0f;
@@ -262,7 +264,7 @@ public class Keyboard2View extends View
           }
           else if (_spaceSlideOffset >= threshold)
           {
-            performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            vibrate();
             if (_config != null && _config.handler != null)
               _config.handler.key_up(KV_SWITCH_BACKWARD, Pointers.Modifiers.EMPTY);
             _isSpaceSlidingLanguage = false;
@@ -307,6 +309,8 @@ public class Keyboard2View extends View
             _potentialArcMinY = ty;
             _potentialArcTurnX = tx;
             _potentialArcIsSpace = isSpace;
+            _potentialArcKeyTopY = getKeyRowTopY(ty);
+            _potentialArcExitX = -1f;
             _isSpaceSlidingLanguage = false;
             _spaceSlideOffset = 0f;
             _hapticFiredForThreshold = false;
@@ -320,6 +324,10 @@ public class Keyboard2View extends View
           if (arcIdx != -1)
           {
             _arcMenu.updateTouch(event.getX(arcIdx), event.getY(arcIdx));
+            if (_arcMenu.checkAndClearHapticTick())
+            {
+              vibrate();
+            }
             invalidate();
           }
           return (true);
@@ -337,7 +345,7 @@ public class Keyboard2View extends View
             {
               if (!_hapticFiredForThreshold)
               {
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                vibrate();
                 _hapticFiredForThreshold = true;
               }
             }
@@ -358,8 +366,8 @@ public class Keyboard2View extends View
             float curY = event.getY(arcIdx);
             float dx = curX - _potentialArcDownX;
             float dy = curY - _potentialArcDownY;
-            float fanCenterY = getMiddleBottomLetterRowBoundary();
-            float triggerY = fanCenterY;
+            float triggerY = getMiddleBottomLetterRowBoundary();
+            float fanCenterY = triggerY + (_potentialArcDownY - triggerY) * 0.20f;
 
             boolean isUpward = (dy < 0);
             float distUp = isUpward ? -dy : 0f;
@@ -367,13 +375,19 @@ public class Keyboard2View extends View
 
             // Cone of 25 degrees from vertical on each side (50 degrees total cone):
             // tan(25°) ≈ 0.4663f
-            boolean isWithinArcCone = isUpward && (distSide <= distUp * 0.4663f);
+            // tan(30°) ≈ 0.57735f
+            boolean isWithinArcCone = isUpward && (distSide <= distUp * 0.57735f);
 
             if (curY < _potentialArcMinY)
             {
               _potentialArcMinY = curY;
               if (isWithinArcCone)
                 _potentialArcTurnX = curX;
+            }
+
+            if (_potentialArcExitX < 0f && curY <= _potentialArcKeyTopY)
+            {
+              _potentialArcExitX = curX;
             }
 
             float turnDx = curX - _potentialArcTurnX;
@@ -418,10 +432,10 @@ public class Keyboard2View extends View
               if (curY <= triggerY)
               {
                 _pointers.cancelPointer(_potentialArcPointerId);
-                _arcMenu.start(curX, _potentialArcDownY, _tc.row_height, fanCenterY,
+                float fanCenterX = (_potentialArcExitX >= 0f) ? _potentialArcExitX : curX;
+                _arcMenu.start(fanCenterX, _potentialArcDownY, _tc.row_height, fanCenterY,
                     _potentialArcIsSpace && hasMultipleLayouts, getNextLanguageBadge(), getContext(), getWidth(), getHeight());
                 _arcMenu.updateTouch(curX, curY);
-                performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 invalidate();
                 return (true);
               }
@@ -517,6 +531,21 @@ public class Keyboard2View extends View
     }
 
     return getHeight() * 0.48f;
+  }
+
+  private float getKeyRowTopY(float ty)
+  {
+    if (_keyboard == null || _tc == null)
+      return ty;
+    float y = _config.marginTop;
+    for (KeyboardData.Row row : _keyboard.rows)
+    {
+      float rowTop = y + row.shift * _tc.row_height;
+      y = rowTop + row.height * _tc.row_height;
+      if (ty < y)
+        return rowTop;
+    }
+    return ty;
   }
 
   private KeyboardData.Row getRowAtPosition(float ty)

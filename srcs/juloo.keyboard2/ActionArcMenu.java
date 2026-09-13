@@ -24,7 +24,13 @@ public final class ActionArcMenu
   }
 
   public static final int INDEX_NONE = -1;
-  public static final int INDEX_CENTER = -2;
+  public static final int SECTOR_HOME = 0;
+  public static final int SECTOR_UNDO = 1;
+  public static final int SECTOR_SELECT_ALL = 2;
+  public static final int SECTOR_CUT = 3;
+  public static final int SECTOR_COPY = 4;
+  public static final int SECTOR_PASTE = 5;
+  public static final int SECTOR_END = 6;
 
   public static class Sector
   {
@@ -45,14 +51,19 @@ public final class ActionArcMenu
   }
 
   private boolean _isActive = false;
-  private float _anchorX = 0f;
-  private float _anchorY = 0f;
   private float _centerArcX = 0f;
   private float _centerArcY = 0f;
-  private float _centerRadius = 0f;
   private float _sectorInnerRadius = 0f;
   private float _sectorOuterRadius = 0f;
+  private float _splitRadius = 0f;
+  private float _deadZoneRadius = 0f;
   private int _hoveredIndex = INDEX_NONE;
+
+  private boolean _visitedOuterV = false;
+  private boolean _isClipboardInV = false;
+  private boolean _visitedOuterZ = false;
+  private boolean _isRedoInZ = false;
+  private boolean _hapticTickRequested = false;
 
   private int _viewWidth = 0;
   private int _viewHeight = 0;
@@ -61,38 +72,36 @@ public final class ActionArcMenu
   private final Paint _dimPaint = new Paint();
   private final Paint _fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final Paint _dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-  private final Paint _centerStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final Paint _textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final Paint _glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final Paint _clipboardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
   private final Path _sectorPath = new Path();
   private final RectF _sectorRectOuter = new RectF();
+  private final RectF _sectorRectSplit = new RectF();
   private final RectF _sectorRectInner = new RectF();
   private Typeface _keyFont = null;
 
   private static final float[] DIVIDER_ANGLES = new float[]{
-    155f, 180f, 204f, 218f, 250f, 270f, 315f, 360f, 385f
+    180f, 192f, 216f, 241f, 258f, 303f, 348f, 360f
   };
 
-  // 8 action sectors:
-  // - Sector 0: Home (<), 155° to 180° (25°)
-  // - Sector 1: Undo (Z), 180° to 204° (24°)
-  // - Sector 2: Redo (Y), 204° to 218° (14°)
-  // - Sector 3: Select All (A), 218° to 250° (32°)
-  // - Sector 4: Cut (X), 250° to 270° (20°)
-  // - Sector 5: Copy (C), 270° to 315° (45°, equal split)
-  // - Sector 6: Paste (V), 315° to 360° (45°, equal split)
-  // - Sector 7: End (>), 360° to 385° (25°)
+  // 7 action sectors strictly above horizontal (180° to 360°):
+  // - Sector 0: Home (<), 180° to 192° (12°, 2x thinner, lifted above horizontal)
+  // - Sector 1: Undo (Z), 192° to 216° (24°, contains inner Redo Y)
+  // - Sector 2: Select All (A), 216° to 241° (25°, proportionally reduced for C/V)
+  // - Sector 3: Cut (X), 241° to 258° (17°, proportionally reduced for C/V)
+  // - Sector 4: Copy (C), 258° to 303° (45°, shifted counter-clockwise by 12°)
+  // - Sector 5: Paste (V), 303° to 348° (45°, shifted counter-clockwise by 12°, contains inner Clipboard)
+  // - Sector 6: End (>), 348° to 360° (12°, 2x thinner, lifted above horizontal)
   private final Sector[] _sectors = new Sector[]{
-    new Sector(ActionType.HOME, "home", 155f, 25f),
-    new Sector(ActionType.UNDO, "Z", 180f, 24f),
-    new Sector(ActionType.REDO, "Y", 204f, 14f),
-    new Sector(ActionType.SELECT_ALL, "A", 218f, 32f),
-    new Sector(ActionType.CUT, "X", 250f, 20f),
-    new Sector(ActionType.COPY, "C", 270f, 45f),
-    new Sector(ActionType.PASTE, "V", 315f, 45f),
-    new Sector(ActionType.END, "end", 360f, 25f)
+    new Sector(ActionType.HOME, "|◀", 180f, 12f),
+    new Sector(ActionType.UNDO, "Z", 192f, 24f),
+    new Sector(ActionType.SELECT_ALL, "A", 216f, 25f),
+    new Sector(ActionType.CUT, "X", 241f, 17f),
+    new Sector(ActionType.COPY, "C", 258f, 45f),
+    new Sector(ActionType.PASTE, "V", 303f, 45f),
+    new Sector(ActionType.END, "▶|", 348f, 12f)
   };
 
   public ActionArcMenu()
@@ -105,10 +114,8 @@ public final class ActionArcMenu
     _dividerPaint.setStyle(Paint.Style.STROKE);
     _dividerPaint.setStrokeCap(Paint.Cap.ROUND);
 
-    _centerStrokePaint.setStyle(Paint.Style.STROKE);
-
     _textPaint.setTextAlign(Paint.Align.CENTER);
-    _textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+    _textPaint.setTypeface(Typeface.DEFAULT);
 
     _clipboardPaint.setTextAlign(Paint.Align.CENTER);
   }
@@ -118,15 +125,25 @@ public final class ActionArcMenu
     return _isActive;
   }
 
+  public boolean checkAndClearHapticTick()
+  {
+    boolean tick = _hapticTickRequested;
+    _hapticTickRequested = false;
+    return tick;
+  }
+
   public void start(float touchX, float touchY, float rowHeight, float centerArcY, boolean hasLanguageSwitch,
                     String nextLangBadge, Context context, int viewWidth, int viewHeight)
   {
     _isActive = true;
-    _anchorX = touchX;
-    _anchorY = touchY;
     _viewWidth = viewWidth;
     _viewHeight = viewHeight;
-    _hoveredIndex = INDEX_CENTER;
+    _hoveredIndex = INDEX_NONE;
+    _visitedOuterV = false;
+    _isClipboardInV = false;
+    _visitedOuterZ = false;
+    _isRedoInZ = false;
+    _hapticTickRequested = false;
 
     _density = context.getResources().getDisplayMetrics().density;
     if (_density <= 0f)
@@ -134,14 +151,10 @@ public final class ActionArcMenu
 
     _dividerPaint.setStrokeWidth(1f * _density);
 
-    // Center clipboard circle: 31.7dp
-    _centerRadius = 31.7f * _density;
-
-    // Visual gap between center circle and sectors: increased 3x (from 8.4dp -> 25.2dp)
-    float gapFromCircle = 25.2f * _density;
-    _sectorInnerRadius = _centerRadius + gapFromCircle; // ~56.9dp
-    // Outer boundary (145dp)
-    _sectorOuterRadius = 145f * _density;
+    _deadZoneRadius = 9.5f * _density;
+    _sectorInnerRadius = 70f * _density;
+    _sectorOuterRadius = 158f * _density;
+    _splitRadius = _sectorInnerRadius + 0.40f * (_sectorOuterRadius - _sectorInnerRadius);
 
     _centerArcX = touchX;
     _centerArcY = centerArcY;
@@ -161,21 +174,26 @@ public final class ActionArcMenu
       return false;
 
     int prevHovered = _hoveredIndex;
+    boolean prevClipboard = _isClipboardInV;
+    boolean prevRedo = _isRedoInZ;
+
     _hoveredIndex = INDEX_NONE;
 
     float dx = touchX - _centerArcX;
     float dy = touchY - _centerArcY;
     float dist = (float)Math.hypot(dx, dy);
 
-    // 1. Center circle zone (Clipboard Manager):
-    // Radius of ~24dp leaves the entire gap and outer circle sensitive to sectors
-    if (dist <= _centerRadius * 0.75f)
+    // Center dead zone: acts as safe cancel
+    if (dist <= _deadZoneRadius)
     {
-      _hoveredIndex = INDEX_CENTER;
+      _hoveredIndex = INDEX_NONE;
+      _visitedOuterV = false;
+      _isClipboardInV = false;
+      _visitedOuterZ = false;
+      _isRedoInZ = false;
     }
     else
     {
-      // 2. Outside center circle: radial sectors
       double angleRad = Math.atan2(dy, dx);
       float angleDeg = (float)Math.toDegrees(angleRad);
       if (angleDeg < 0f)
@@ -184,8 +202,8 @@ public final class ActionArcMenu
       // Normalize angle: 0°..45° becomes 360°..405° for continuous right wing
       float testAngle = (angleDeg < 45f) ? angleDeg + 360f : angleDeg;
 
-      // Angular span from 140° to 400° covers Home (<), 6 commands, and End (>)
-      if (testAngle >= 140f && testAngle <= 400f)
+      // Angular span from 170° to 370° covers above-horizontal semicircle [180°, 360°] with 10° margin
+      if (testAngle >= 170f && testAngle <= 370f)
       {
         for (int i = 0; i < _sectors.length; i++)
         {
@@ -199,19 +217,75 @@ public final class ActionArcMenu
         if (_hoveredIndex == INDEX_NONE)
         {
           if (testAngle < 180f)
-            _hoveredIndex = 0;
+            _hoveredIndex = SECTOR_HOME;
           else if (testAngle >= 360f)
-            _hoveredIndex = 7;
+            _hoveredIndex = SECTOR_END;
+        }
+
+        // Sector Z: Outer Undo (Z), Inner Redo (Y)
+        if (_hoveredIndex == SECTOR_UNDO)
+        {
+          if (dist > _splitRadius)
+          {
+            _visitedOuterZ = true;
+            _isRedoInZ = false;
+          }
+          else
+          {
+            if (_visitedOuterZ)
+              _isRedoInZ = true;
+            else
+              _isRedoInZ = false;
+          }
+        }
+        else
+        {
+          _visitedOuterZ = false;
+          _isRedoInZ = false;
+        }
+
+        // Sector V: Outer Paste (V), Inner Clipboard Manager
+        if (_hoveredIndex == SECTOR_PASTE)
+        {
+          if (dist > _splitRadius)
+          {
+            _visitedOuterV = true;
+            _isClipboardInV = false;
+          }
+          else
+          {
+            if (_visitedOuterV)
+              _isClipboardInV = true;
+            else
+              _isClipboardInV = false;
+          }
+        }
+        else
+        {
+          _visitedOuterV = false;
+          _isClipboardInV = false;
         }
       }
       else
       {
-        // Dragging down below 140° or above 400° (back towards spacebar) cancels action
+        // Dragging down below 170° or above 370° (back towards spacebar) cancels action
         _hoveredIndex = INDEX_NONE;
+        _visitedOuterV = false;
+        _isClipboardInV = false;
+        _visitedOuterZ = false;
+        _isRedoInZ = false;
       }
     }
 
-    return (_hoveredIndex != prevHovered);
+    boolean stateChanged = (_hoveredIndex != prevHovered || _isClipboardInV != prevClipboard || _isRedoInZ != prevRedo);
+    // Haptic tick ONLY on activation of the clipboard icon sector or redo sector
+    if ((_hoveredIndex == SECTOR_PASTE && !prevClipboard && _isClipboardInV) ||
+        (_hoveredIndex == SECTOR_UNDO && !prevRedo && _isRedoInZ))
+    {
+      _hapticTickRequested = true;
+    }
+
+    return stateChanged;
   }
 
   public ActionType finishTouch(float touchX, float touchY)
@@ -222,9 +296,13 @@ public final class ActionArcMenu
     updateTouch(touchX, touchY);
     ActionType action = null;
 
-    if (_hoveredIndex == INDEX_CENTER)
+    if (_hoveredIndex == SECTOR_UNDO)
     {
-      action = ActionType.CLIPBOARD;
+      action = _isRedoInZ ? ActionType.REDO : ActionType.UNDO;
+    }
+    else if (_hoveredIndex == SECTOR_PASTE)
+    {
+      action = _isClipboardInV ? ActionType.CLIPBOARD : ActionType.PASTE;
     }
     else if (_hoveredIndex >= 0 && _hoveredIndex < _sectors.length)
     {
@@ -233,6 +311,11 @@ public final class ActionArcMenu
 
     _isActive = false;
     _hoveredIndex = INDEX_NONE;
+    _visitedOuterV = false;
+    _isClipboardInV = false;
+    _visitedOuterZ = false;
+    _isRedoInZ = false;
+    _hapticTickRequested = false;
     return action;
   }
 
@@ -240,6 +323,11 @@ public final class ActionArcMenu
   {
     _isActive = false;
     _hoveredIndex = INDEX_NONE;
+    _visitedOuterV = false;
+    _isClipboardInV = false;
+    _visitedOuterZ = false;
+    _isRedoInZ = false;
+    _hapticTickRequested = false;
   }
 
   public void draw(Canvas canvas, Theme theme)
@@ -270,11 +358,10 @@ public final class ActionArcMenu
     int textColor = (theme.labelColor != 0) ? theme.labelColor :
                     (theme.actionLabelColor != 0 ? theme.actionLabelColor : theme.pressedColor);
 
-    int centerNormalColor = (theme.colorKey != 0) ? theme.colorKey :
-                            (theme.colorKeyAction != 0 ? theme.colorKeyAction : baseBg);
-
     _sectorRectOuter.set(_centerArcX - _sectorOuterRadius, _centerArcY - _sectorOuterRadius,
                          _centerArcX + _sectorOuterRadius, _centerArcY + _sectorOuterRadius);
+    _sectorRectSplit.set(_centerArcX - _splitRadius, _centerArcY - _splitRadius,
+                         _centerArcX + _splitRadius, _centerArcY + _splitRadius);
     _sectorRectInner.set(_centerArcX - _sectorInnerRadius, _centerArcY - _sectorInnerRadius,
                          _centerArcX + _sectorInnerRadius, _centerArcY + _sectorInnerRadius);
 
@@ -283,8 +370,20 @@ public final class ActionArcMenu
     {
       Sector s = _sectors[_hoveredIndex];
       _sectorPath.reset();
-      _sectorPath.arcTo(_sectorRectOuter, s.startAngle, s.sweepAngle, true);
-      _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
+
+      if ((_hoveredIndex == SECTOR_PASTE && _isClipboardInV) ||
+          (_hoveredIndex == SECTOR_UNDO && _isRedoInZ))
+      {
+        // Highlight only the inner 40% (clipboard manager or redo)
+        _sectorPath.arcTo(_sectorRectSplit, s.startAngle, s.sweepAngle, true);
+        _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
+      }
+      else
+      {
+        // Highlight entire sector (when moving outward to V / Z, or for other sectors)
+        _sectorPath.arcTo(_sectorRectOuter, s.startAngle, s.sweepAngle, true);
+        _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
+      }
       _sectorPath.close();
 
       _glowPaint.setColor((activeColor & 0x00FFFFFF) | 0x40000000);
@@ -308,53 +407,78 @@ public final class ActionArcMenu
       canvas.drawLine(x1, y1, x2, y2, _dividerPaint);
     }
 
-    // 4. Draw sector labels near the outer edge
-    float rLabel = _sectorOuterRadius - 18f * _density;
+    // 4. Draw sector labels (excluding combo sectors Z and V which are rendered individually below)
+    float rLabel = _splitRadius + (_sectorOuterRadius - _splitRadius) * 0.70f;
     _textPaint.setColor(textColor);
     for (int i = 0; i < _sectors.length; i++)
     {
+      if (i == SECTOR_UNDO || i == SECTOR_PASTE)
+        continue;
+
       Sector s = _sectors[i];
       double midRad = Math.toRadians(s.midAngle);
       float lx = _centerArcX + (float)(rLabel * Math.cos(midRad));
       float ly = _centerArcY + (float)(rLabel * Math.sin(midRad));
 
-      if (s.action == ActionType.HOME)
-      {
-        float distY = ly - _centerArcY;
-        ly -= distY * 0.30f;
-        lx += 10f * _density;
-      }
-      else if (s.action == ActionType.END)
-      {
-        float distY = ly - _centerArcY;
-        ly -= distY * 0.30f;
-        lx -= 10f * _density;
-      }
-
       float baseSize;
       if (s.action == ActionType.HOME || s.action == ActionType.END)
-        baseSize = 14f * _density;
-      else if (s.action == ActionType.REDO)
-        baseSize = 19.5f * _density;
+        baseSize = 15f * _density;
       else
-        baseSize = 22f * _density;
+        baseSize = 24f * _density;
 
       _textPaint.setTextSize(baseSize);
       float textY = ly - (_textPaint.ascent() + _textPaint.descent()) / 2f;
       canvas.drawText(s.label, lx, textY, _textPaint);
     }
 
-    // 5. Center circle (Clipboard Manager)
-    boolean isCenterHovered = (_hoveredIndex == INDEX_CENTER);
-    float r = _centerRadius;
+    // Sector Z: Outer "Z" (Undo) and Inner "Y" (Redo)
+    Sector sz = _sectors[SECTOR_UNDO];
+    double midRadZ = Math.toRadians(sz.midAngle);
+    float cosZ = (float)Math.cos(midRadZ);
+    float sinZ = (float)Math.sin(midRadZ);
 
-    _fillPaint.setColor(isCenterHovered ? activeColor : centerNormalColor);
-    canvas.drawCircle(_centerArcX, _centerArcY, r, _fillPaint);
+    // Outer "Z"
+    float rOuterZ = rLabel;
+    float zx = _centerArcX + rOuterZ * cosZ;
+    float zy = _centerArcY + rOuterZ * sinZ;
+
+    _textPaint.setTextSize(24f * _density);
+    float zTextY = zy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("Z", zx, zTextY, _textPaint);
+
+    // Inner "Y"
+    float rInnerZ = _sectorInnerRadius + (_splitRadius - _sectorInnerRadius) * 0.50f;
+    float yx = _centerArcX + rInnerZ * cosZ;
+    float yy = _centerArcY + rInnerZ * sinZ;
+
+    _textPaint.setTextSize(18f * _density);
+    float yTextY = yy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("Y", yx, yTextY, _textPaint);
+
+    // Sector V: Outer "V" and Inner Clipboard Manager icon
+    Sector sv = _sectors[SECTOR_PASTE];
+    double midRadV = Math.toRadians(sv.midAngle);
+    float cosV = (float)Math.cos(midRadV);
+    float sinV = (float)Math.sin(midRadV);
+
+    // Outer "V"
+    float rOuterV = rLabel;
+    float vx = _centerArcX + rOuterV * cosV;
+    float vy = _centerArcY + rOuterV * sinV;
+
+    _textPaint.setTextSize(24f * _density);
+    float vTextY = vy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("V", vx, vTextY, _textPaint);
+
+    // Inner clipboard icon
+    float rInnerV = _sectorInnerRadius + (_splitRadius - _sectorInnerRadius) * 0.50f;
+    float cx = _centerArcX + rInnerV * cosV;
+    float cy = _centerArcY + rInnerV * sinV;
 
     _clipboardPaint.setTypeface(_keyFont != null ? _keyFont : Typeface.DEFAULT);
-    _clipboardPaint.setTextSize(_centerRadius * 0.70f);
+    _clipboardPaint.setTextSize(17f * _density);
     _clipboardPaint.setColor(textColor);
-    float textY = _centerArcY - (_clipboardPaint.ascent() + _clipboardPaint.descent()) / 2f;
-    canvas.drawText(_keyFont != null ? "\uE017" : "📋", _centerArcX, textY, _clipboardPaint);
+    float clipTextY = cy - (_clipboardPaint.ascent() + _clipboardPaint.descent()) / 2f;
+    canvas.drawText(_keyFont != null ? "\uE017" : "📋", cx, clipTextY, _clipboardPaint);
   }
 }
