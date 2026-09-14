@@ -431,6 +431,8 @@ public final class Config
     public void key_up(KeyValue value, Pointers.Modifiers mods);
     public void mods_changed(Pointers.Modifiers mods);
     public void suggestion_entered(String text);
+    public void move_trackpad(int dx, int dy, boolean select);
+    public void sync_selection();
   }
 
   /** Config migrations. */

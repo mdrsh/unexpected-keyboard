@@ -1,10 +1,15 @@
 package juloo.keyboard2.suggestions;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.os.Build.VERSION;
 import android.text.InputType;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -40,6 +45,54 @@ public class CandidatesView extends LinearLayout
   boolean should_show_dictionary_switch = false;
 
   TextView _lang_name_view;
+
+  private String _trackpadText = null;
+  private int _trackpadTextColor = Color.WHITE;
+  private int _trackpadBgColor = Color.argb(235, 24, 24, 24);
+  private final Paint _trackpadDimPaint = new Paint();
+  private final Paint _trackpadTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+  public void setTrackpadState(boolean active, String text, int textColor, int bgColor)
+  {
+    _trackpadText = active ? text : null;
+    _trackpadTextColor = textColor;
+    if (bgColor != 0)
+      _trackpadBgColor = bgColor;
+    invalidate();
+  }
+
+  public boolean isTrackpadActive()
+  {
+    return _trackpadText != null;
+  }
+
+  @Override
+  public boolean onInterceptTouchEvent(MotionEvent ev)
+  {
+    if (_trackpadText != null)
+      return true;
+    return super.onInterceptTouchEvent(ev);
+  }
+
+  @Override
+  protected void dispatchDraw(Canvas canvas)
+  {
+    super.dispatchDraw(canvas);
+    if (_trackpadText != null)
+    {
+      _trackpadDimPaint.setColor(_trackpadBgColor);
+      canvas.drawRect(0, 0, getWidth(), getHeight(), _trackpadDimPaint);
+
+      _trackpadTextPaint.setColor(_trackpadTextColor);
+      _trackpadTextPaint.setTextAlign(Paint.Align.CENTER);
+      _trackpadTextPaint.setTypeface(Typeface.DEFAULT);
+      _trackpadTextPaint.setFakeBoldText(false);
+      _trackpadTextPaint.setTextSize(getHeight() * 0.42f);
+      float cx = getWidth() / 2f;
+      float cy = (getHeight() - _trackpadTextPaint.ascent() - _trackpadTextPaint.descent()) / 2f;
+      canvas.drawText(_trackpadText, cx, cy, _trackpadTextPaint);
+    }
+  }
 
   public CandidatesView(Context context, AttributeSet attrs)
   {

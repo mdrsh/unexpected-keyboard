@@ -1060,6 +1060,83 @@ public final class KeyEventHandler
       send_key_down_up_repeat(KeyEvent.KEYCODE_DPAD_DOWN, d);
   }
 
+  @Override
+  public void move_trackpad(int dx, int dy, boolean select)
+  {
+    _last_smart_action = SmartAction.NONE;
+    _last_space_time = 0;
+    InputConnection conn = _recv.getCurrentInputConnection();
+    if (conn == null)
+      return;
+
+    if (!select)
+    {
+      _meta_state &= ~(KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+    }
+
+    if (dx != 0)
+    {
+      if (select)
+      {
+        int old_meta = _meta_state;
+        _meta_state |= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+        ExtractedText et = get_cursor_pos(conn);
+        if (et != null && can_set_selection(conn))
+        {
+          int start = et.selectionStart;
+          int end = et.selectionEnd + dx;
+          if (end < 0) end = 0;
+          if (!conn.setSelection(start, end))
+            move_cursor_fallback(dx);
+        }
+        else
+        {
+          move_cursor_fallback(dx);
+        }
+        _meta_state = old_meta;
+      }
+      else
+      {
+        ExtractedText et = get_cursor_pos(conn);
+        if (et != null && can_set_selection(conn))
+        {
+          int pos = et.selectionEnd + dx;
+          if (pos < 0) pos = 0;
+          if (!conn.setSelection(pos, pos))
+            move_cursor_fallback(dx);
+        }
+        else
+        {
+          move_cursor_fallback(dx);
+        }
+      }
+    }
+
+    if (dy != 0)
+    {
+      int meta = select ? (_meta_state | KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON)
+                        : (_meta_state & ~(KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON));
+      int keyCode = (dy < 0) ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN;
+      int repeat = Math.abs(dy);
+      while (repeat-- > 0)
+        send_key_down_up(keyCode, meta);
+    }
+  }
+
+  @Override
+  public void sync_selection()
+  {
+    InputConnection conn = _recv.getCurrentInputConnection();
+    if (conn == null)
+      return;
+    ExtractedText et = get_cursor_pos(conn);
+    if (et != null)
+    {
+      selection_updated(et.selectionStart, et.selectionStart, et.selectionEnd);
+      _recv.selection_state_changed(et.selectionStart != et.selectionEnd);
+    }
+  }
+
   void evaluate_macro(KeyValue[] keys)
   {
     if (keys.length == 0)

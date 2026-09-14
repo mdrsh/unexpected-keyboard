@@ -478,6 +478,46 @@ public final class Pointers implements Handler.Callback
     _longpress_handler.removeMessages(ptr.timeoutWhat);
   }
 
+  public void stopPointerLongPress(int pointerId)
+  {
+    Pointer ptr = getPtr(pointerId);
+    if (ptr != null)
+      stopLongPress(ptr);
+  }
+
+  public void clearShiftModifier()
+  {
+    boolean changed = false;
+    for (int i = _ptrs.size() - 1; i >= 0; i--)
+    {
+      Pointer p = _ptrs.get(i);
+      boolean isShift = (p.value != null && (p.value.equals(KeyValue.SHIFT) ||
+          (p.value.getKind() == KeyValue.Kind.Modifier && p.value.getModifier() == KeyValue.Modifier.SHIFT) ||
+          (p.value.getKind() == KeyValue.Kind.Event && p.value.getEvent() == KeyValue.Event.CAPS_LOCK))) ||
+          (p.key != null && p.key.keys != null && p.key.keys.length > 0 && p.key.keys[0] != null && p.key.keys[0].equals(KeyValue.SHIFT));
+      if (isShift)
+      {
+        stopLongPress(p);
+        _ptrs.remove(i);
+        changed = true;
+      }
+    }
+    if (changed)
+      _handler.onPointerFlagsChanged(false);
+  }
+
+  public KeyValue getPointerValue(int pointerId)
+  {
+    Pointer ptr = getPtr(pointerId);
+    return (ptr != null) ? ptr.value : null;
+  }
+
+  public boolean isPointerGesturing(int pointerId)
+  {
+    Pointer ptr = getPtr(pointerId);
+    return (ptr != null && ptr.gesture != null && ptr.gesture.is_in_progress());
+  }
+
   private void restartLongPress(Pointer ptr)
   {
     stopLongPress(ptr);

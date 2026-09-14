@@ -6,13 +6,18 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.graphics.Typeface;
 import android.inputmethodservice.InputMethodService;
+import android.os.Build;
 import android.os.Build.VERSION;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.HapticFeedbackConstants;
@@ -80,6 +85,111 @@ public class Keyboard2View extends View
   private float _mainKeyboardBoundaryY = -1f;
   private float _mainKeyboardHeight = -1f;
 
+  private static final int TRACKPAD_MODE_NONE = 0;
+  private static final int TRACKPAD_MODE_CURSOR = 1;
+  private static final int TRACKPAD_MODE_SELECTION = 2;
+  private static final int TRACKPAD_HOLD_DELAY_CURSOR_MS = 100;
+  private static final int TRACKPAD_HOLD_DELAY_SELECTION_MS = 180;
+
+  public interface TrackpadListener
+  {
+    boolean onTrackpadStateChanged(boolean armed, String label, int textColor, int bgColor);
+  }
+
+  private TrackpadListener _trackpadListener = null;
+  private boolean _trackpadOverlayHandledExternally = false;
+
+  public void setTrackpadListener(TrackpadListener listener)
+  {
+    _trackpadListener = listener;
+  }
+
+  private final Handler _trackpadHandler = new Handler(Looper.getMainLooper());
+  private boolean _trackpadArmed = false;
+  private KeyboardData.Key _trackpadTriggerKey = null;
+  private final RectF _trackpadTriggerRect = new RectF();
+  private final Paint _trackpadDimPaint = new Paint();
+  private final Paint _trackpadBadgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final Paint _trackpadBadgeTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+  private final Runnable _trackpadArmRunnable = new Runnable()
+  {
+    @Override
+    public void run()
+    {
+      armTrackpad();
+    }
+  };
+
+  private void armTrackpad()
+  {
+    if (_trackpadTriggerPointerId == -1 || _trackpadArmed)
+      return;
+    _trackpadHandler.removeCallbacks(_trackpadArmRunnable);
+    _trackpadArmed = true;
+    _trackpadTriggerConsumed = true;
+    _pointers.stopPointerLongPress(_trackpadTriggerPointerId);
+    if (_trackpadTriggerMode == TRACKPAD_MODE_CURSOR)
+    {
+      _pointers.clearShiftModifier();
+    }
+    if (_trackpadPointerId != -1)
+    {
+      _pointers.cancelPointer(_trackpadPointerId);
+      _trackpadActive = true;
+    }
+    String label = (_trackpadTriggerMode == TRACKPAD_MODE_SELECTION) ? "Виділення" : "Переміщення курсору";
+    int textColor = (_theme != null && _theme.subLabelNumberRowColor != 0)
+        ? _theme.subLabelNumberRowColor
+        : ((_theme != null) ? _theme.subLabelColor : Color.WHITE);
+    int baseBg = (_theme != null)
+        ? ((_theme.hasKeyboardGradient && _theme.keyboardGradientStart != 0) ? _theme.keyboardGradientStart : _theme.colorKeyboard)
+        : 0xFF181818;
+    if (baseBg == 0) baseBg = 0xFF181818;
+    int bgColor = Color.argb(245, Color.red(baseBg), Color.green(baseBg), Color.blue(baseBg));
+    boolean handled = false;
+    if (_trackpadListener != null)
+    {
+      handled = _trackpadListener.onTrackpadStateChanged(true, label, textColor, bgColor);
+    }
+    _trackpadOverlayHandledExternally = handled;
+    invalidate();
+  }
+
+  private void cancelTrackpadArming()
+  {
+    _trackpadHandler.removeCallbacks(_trackpadArmRunnable);
+    _trackpadTriggerPointerId = -1;
+    _trackpadTriggerKey = null;
+    _trackpadTriggerMode = TRACKPAD_MODE_NONE;
+    _trackpadTriggerConsumed = false;
+    _trackpadArmed = false;
+    _trackpadActive = false;
+    _trackpadPointerId = -1;
+    _trackpadAccumX = 0f;
+    _trackpadAccumY = 0f;
+    if (_trackpadListener != null)
+    {
+      _trackpadListener.onTrackpadStateChanged(false, null, 0, 0);
+    }
+    _trackpadOverlayHandledExternally = false;
+    invalidate();
+  }
+
+  private int _trackpadTriggerPointerId = -1;
+  private int _trackpadTriggerMode = TRACKPAD_MODE_NONE;
+  private float _trackpadTriggerDownX = 0f;
+  private float _trackpadTriggerDownY = 0f;
+  private boolean _trackpadTriggerConsumed = false;
+  private int _trackpadPointerId = -1;
+  private boolean _trackpadActive = false;
+  private float _trackpadStartX = 0f;
+  private float _trackpadStartY = 0f;
+  private float _trackpadLastX = 0f;
+  private float _trackpadLastY = 0f;
+  private float _trackpadAccumX = 0f;
+  private float _trackpadAccumY = 0f;
+
   enum Vertical
   {
     TOP,
@@ -93,6 +203,11 @@ public class Keyboard2View extends View
     _theme = new Theme(getContext(), attrs);
     _config = Config.globalConfig();
     _pointers = new Pointers(this, _config);
+    _trackpadDimPaint.setColor(Color.argb(140, 0, 0, 0));
+    _trackpadBadgePaint.setColor(Color.argb(215, 30, 30, 30));
+    _trackpadBadgeTextPaint.setColor(Color.WHITE);
+    _trackpadBadgeTextPaint.setTextAlign(Paint.Align.CENTER);
+    _trackpadBadgeTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
     refresh_navigation_bar(context);
     setOnTouchListener(this);
     int layout_id = (attrs == null) ? 0 :
@@ -150,6 +265,14 @@ public class Keyboard2View extends View
     _isSpaceSlidingLanguage = false;
     _spaceSlideOffset = 0f;
     _potentialArcPointerId = -1;
+    _trackpadHandler.removeCallbacks(_trackpadArmRunnable);
+    _trackpadArmed = false;
+    _trackpadTriggerPointerId = -1;
+    _trackpadTriggerKey = null;
+    _trackpadTriggerMode = TRACKPAD_MODE_NONE;
+    _trackpadTriggerConsumed = false;
+    _trackpadPointerId = -1;
+    _trackpadActive = false;
     _mods = Pointers.Modifiers.EMPTY;
     _pointers.clear();
     requestLayout();
@@ -164,9 +287,16 @@ public class Keyboard2View extends View
     _pointers.set_fake_pointer_state(key, kv, latched, lock);
   }
 
+  public boolean isTrackpadArmed()
+  {
+    return _trackpadArmed;
+  }
+
   /** Called by auto-capitalisation. */
   public void set_shift_state(boolean latched, boolean lock)
   {
+    if (_trackpadArmed)
+      return;
     set_fake_ptr_latched(_shift_key, KeyValue.SHIFT, latched, lock);
   }
 
@@ -179,6 +309,8 @@ public class Keyboard2View extends View
   /** Called from [Keybard2.onUpdateSelection].  */
   public void set_selection_state(boolean selection_state)
   {
+    if (_trackpadArmed)
+      return;
     if (_config.editor_config.selection_mode_enabled)
       set_fake_ptr_latched(KeyboardData.Key.EMPTY,
           KeyValue.SELECTION_MODE, selection_state, true);
@@ -278,10 +410,51 @@ public class Keyboard2View extends View
           _potentialArcPointerId = -1;
           return (true);
         }
-        else if (_potentialArcPointerId != -1 && upPointerId == _potentialArcPointerId)
+        if (_potentialArcPointerId != -1 && upPointerId == _potentialArcPointerId)
         {
           _potentialArcPointerId = -1;
         }
+
+        if (upPointerId == _trackpadTriggerPointerId)
+        {
+          _trackpadHandler.removeCallbacks(_trackpadArmRunnable);
+          boolean wasArmedOrConsumed = _trackpadArmed || _trackpadTriggerConsumed;
+          _trackpadTriggerPointerId = -1;
+          _trackpadTriggerKey = null;
+          _trackpadTriggerMode = TRACKPAD_MODE_NONE;
+          _trackpadTriggerConsumed = false;
+          _trackpadArmed = false;
+          _trackpadActive = false;
+          _trackpadPointerId = -1;
+          _trackpadAccumX = 0f;
+          _trackpadAccumY = 0f;
+          if (_trackpadListener != null)
+          {
+            _trackpadListener.onTrackpadStateChanged(false, null, 0, 0);
+          }
+          _trackpadOverlayHandledExternally = false;
+          if (wasArmedOrConsumed)
+          {
+            _pointers.cancelPointer(upPointerId);
+            invalidate();
+            if (_config != null && _config.handler != null)
+              _config.handler.sync_selection();
+            return (true);
+          }
+        }
+        else if (upPointerId == _trackpadPointerId)
+        {
+          _trackpadActive = false;
+          _trackpadPointerId = -1;
+          _trackpadAccumX = 0f;
+          _trackpadAccumY = 0f;
+          if (_trackpadArmed)
+          {
+            invalidate();
+            return (true);
+          }
+        }
+
         _pointers.onTouchUp(upPointerId);
         break;
       case MotionEvent.ACTION_DOWN:
@@ -289,10 +462,25 @@ public class Keyboard2View extends View
         p = event.getActionIndex();
         float tx = event.getX(p);
         float ty = event.getY(p);
+        int downPointerId = event.getPointerId(p);
+
+        if (_trackpadArmed && _trackpadTriggerPointerId != -1 && downPointerId != _trackpadTriggerPointerId)
+        {
+          _trackpadPointerId = downPointerId;
+          _trackpadActive = true;
+          _trackpadStartX = tx;
+          _trackpadStartY = ty;
+          _trackpadLastX = tx;
+          _trackpadLastY = ty;
+          _trackpadAccumX = 0f;
+          _trackpadAccumY = 0f;
+          return (true);
+        }
+
         KeyboardData.Key key = getKeyAtPosition(tx, ty);
         if (key != null)
         {
-          _pointers.onTouchDown(tx, ty, event.getPointerId(p), key);
+          _pointers.onTouchDown(tx, ty, downPointerId, key);
           boolean isMainKeyboard = (_keyboard != null && _keyboard.bottom_row);
           boolean isSpace = (key.role == KeyboardData.Key.Role.Space_bar && isMainKeyboard);
           boolean isZero = (key.keys[0] != null && key.keys[0].getKind() == KeyValue.Kind.Char && key.keys[0].getChar() == '0');
@@ -303,7 +491,7 @@ public class Keyboard2View extends View
               _spaceSnapAnim.cancel();
               _spaceSnapAnim = null;
             }
-            _potentialArcPointerId = event.getPointerId(p);
+            _potentialArcPointerId = downPointerId;
             _potentialArcDownX = tx;
             _potentialArcDownY = ty;
             _potentialArcMinY = ty;
@@ -315,9 +503,144 @@ public class Keyboard2View extends View
             _spaceSlideOffset = 0f;
             _hapticFiredForThreshold = false;
           }
+
+          int trigMode = getTrackpadTriggerMode(key, _pointers.getPointerValue(downPointerId));
+          if (trigMode != TRACKPAD_MODE_NONE)
+          {
+            _trackpadTriggerPointerId = downPointerId;
+            _trackpadTriggerKey = key;
+            _trackpadTriggerMode = trigMode;
+            _trackpadTriggerDownX = tx;
+            _trackpadTriggerDownY = ty;
+            _trackpadTriggerConsumed = false;
+            _trackpadArmed = false;
+            _trackpadActive = false;
+            _trackpadPointerId = -1;
+            _trackpadHandler.removeCallbacks(_trackpadArmRunnable);
+            int delay = (trigMode == TRACKPAD_MODE_SELECTION)
+                ? TRACKPAD_HOLD_DELAY_SELECTION_MS
+                : TRACKPAD_HOLD_DELAY_CURSOR_MS;
+            _trackpadHandler.postDelayed(_trackpadArmRunnable, delay);
+          }
+          else if (!_trackpadArmed && _trackpadTriggerPointerId != -1 && downPointerId != _trackpadTriggerPointerId)
+          {
+            _trackpadPointerId = downPointerId;
+            _trackpadActive = false;
+            _trackpadStartX = tx;
+            _trackpadStartY = ty;
+            _trackpadLastX = tx;
+            _trackpadLastY = ty;
+            _trackpadAccumX = 0f;
+            _trackpadAccumY = 0f;
+          }
         }
         break;
       case MotionEvent.ACTION_MOVE:
+        if (!_trackpadArmed && _trackpadTriggerPointerId != -1)
+        {
+          int trigIdx = event.findPointerIndex(_trackpadTriggerPointerId);
+          if (trigIdx != -1)
+          {
+            float tdx = event.getX(trigIdx) - _trackpadTriggerDownX;
+            float tdy = event.getY(trigIdx) - _trackpadTriggerDownY;
+            boolean isGesture = _pointers.isPointerGesturing(_trackpadTriggerPointerId);
+            float swipeDist = (_config != null && _config.swipe_dist_px > 0) ? _config.swipe_dist_px : 60f;
+            float threshold = swipeDist * 0.75f;
+            if (isGesture || (tdx * tdx + tdy * tdy >= threshold * threshold))
+            {
+              // Finger moved on trigger key: user is swiping/gesturing on it (e.g. autocorrect toggle, caps lock).
+              cancelTrackpadArming();
+            }
+          }
+
+          if (!_trackpadArmed && _trackpadTriggerPointerId != -1 && _trackpadPointerId != -1)
+          {
+            int padIdx = event.findPointerIndex(_trackpadPointerId);
+            if (padIdx != -1)
+            {
+              float pdx = event.getX(padIdx) - _trackpadStartX;
+              float pdy = event.getY(padIdx) - _trackpadStartY;
+              float slideThreshold = (_config != null && _config.slide_step_px > 0) ? (_config.slide_step_px * 0.5f) : 18f;
+              if (pdx * pdx + pdy * pdy >= slideThreshold * slideThreshold)
+              {
+                armTrackpad();
+              }
+            }
+          }
+        }
+
+        if (_trackpadArmed && _trackpadPointerId != -1)
+        {
+          int padIdx = event.findPointerIndex(_trackpadPointerId);
+          if (padIdx != -1)
+          {
+            float curX = event.getX(padIdx);
+            float curY = event.getY(padIdx);
+            float dx = curX - _trackpadLastX;
+            float dy = curY - _trackpadLastY;
+            _trackpadLastX = curX;
+            _trackpadLastY = curY;
+
+            float absDx = Math.abs(dx);
+            float absDy = Math.abs(dy);
+
+            float stepX = (_config != null && _config.slide_step_px > 0) ? _config.slide_step_px : 35f;
+            float stepY = stepX * 2.2f;
+
+            // Bezel protection: when the finger reaches the left or right edge of the screen,
+            // horizontal dx drops to 0 while the thumb rolls or slides against the bezel.
+            // Do not allow bezel friction to accumulate vertical drift and jump lines!
+            boolean isNearHorizontalEdge = (curX <= 30f || curX >= getWidth() - 30f);
+            boolean isBezelFriction = isNearHorizontalEdge && (absDx < 2.5f);
+
+            if (isBezelFriction)
+            {
+              // Finger stopped at bezel: cancel any vertical drift
+              _trackpadAccumY = 0f;
+            }
+            else if (absDx >= absDy * 0.85f)
+            {
+              // Horizontal scrub (including natural ergonomic thumb tilt up to ~50°):
+              // Accumulate X and strictly zero vertical accumulator so horizontal navigation NEVER jumps lines!
+              _trackpadAccumX += dx;
+              _trackpadAccumY = 0f;
+            }
+            else if (absDy > absDx * 1.25f)
+            {
+              // Deliberate vertical movement (clearly up or down):
+              // Accumulate Y and zero horizontal accumulator so line jumping doesn't jitter sideways
+              _trackpadAccumY += dy;
+              _trackpadAccumX = 0f;
+            }
+            else
+            {
+              // Ambiguous transition zone (around 45°-50°):
+              // Default to horizontal text navigation for stability
+              _trackpadAccumX += dx;
+              _trackpadAccumY = 0f;
+            }
+
+            if (Math.abs(_trackpadAccumX) >= stepX)
+            {
+              int stepsX = (int) (_trackpadAccumX / stepX);
+              _trackpadAccumX -= stepsX * stepX;
+              _trackpadAccumY = 0f;
+              if (_config != null && _config.handler != null)
+                _config.handler.move_trackpad(stepsX, 0, _trackpadTriggerMode == TRACKPAD_MODE_SELECTION);
+            }
+
+            if (Math.abs(_trackpadAccumY) >= stepY)
+            {
+              int stepsY = (int) (_trackpadAccumY / stepY);
+              _trackpadAccumY -= stepsY * stepY;
+              _trackpadAccumX = 0f;
+              if (_config != null && _config.handler != null)
+                _config.handler.move_trackpad(0, stepsY, _trackpadTriggerMode == TRACKPAD_MODE_SELECTION);
+            }
+
+            return (true);
+          }
+        }
         if (_arcMenu.isActive())
         {
           int arcIdx = event.findPointerIndex(_potentialArcPointerId);
@@ -459,12 +782,68 @@ public class Keyboard2View extends View
           _potentialArcPointerId = -1;
           invalidate();
         }
+        cancelTrackpadArming();
         _pointers.onTouchCancel();
         break;
       default:
         return (false);
     }
     return (true);
+  }
+
+  private int getTrackpadTriggerMode(KeyboardData.Key key, KeyValue activeValue)
+  {
+    if (activeValue != null)
+    {
+      if (isTrackpadShiftValue(activeValue))
+        return TRACKPAD_MODE_SELECTION;
+      if (isTrackpadCursorValue(activeValue))
+        return TRACKPAD_MODE_CURSOR;
+    }
+    if (key != null && key.keys != null && key.keys.length > 0)
+    {
+      KeyValue k0 = key.keys[0];
+      if (k0 != null)
+      {
+        if (isTrackpadShiftValue(k0))
+          return TRACKPAD_MODE_SELECTION;
+        if (isTrackpadCursorValue(k0))
+          return TRACKPAD_MODE_CURSOR;
+      }
+      if (key.role == KeyboardData.Key.Role.Action)
+      {
+        for (KeyValue k : key.keys)
+        {
+          if (k == null) continue;
+          if (isTrackpadShiftValue(k))
+            return TRACKPAD_MODE_SELECTION;
+          if (isTrackpadCursorValue(k))
+            return TRACKPAD_MODE_CURSOR;
+        }
+      }
+    }
+    return TRACKPAD_MODE_NONE;
+  }
+
+  private boolean isTrackpadShiftValue(KeyValue kv)
+  {
+    if (kv == null) return false;
+    return kv.equals(KeyValue.SHIFT) ||
+        (kv.getKind() == KeyValue.Kind.Modifier && kv.getModifier() == KeyValue.Modifier.SHIFT) ||
+        (kv.getKind() == KeyValue.Kind.Event && kv.getEvent() == KeyValue.Event.CAPS_LOCK);
+  }
+
+  private boolean isTrackpadCursorValue(KeyValue kv)
+  {
+    if (kv == null) return false;
+    if (kv.getKind() == KeyValue.Kind.Event)
+    {
+      KeyValue.Event ev = kv.getEvent();
+      return ev == KeyValue.Event.SWITCH_NUMERIC || ev == KeyValue.Event.SWITCH_TEXT;
+    }
+    if (kv.getKind() == KeyValue.Kind.Modifier && kv.getModifier() == KeyValue.Modifier.FN)
+      return true;
+    return false;
   }
 
   public float getMiddleBottomLetterRowBoundary()
@@ -704,6 +1083,10 @@ public class Keyboard2View extends View
       {
         x += k.shift * _keyWidth;
         float keyW = _keyWidth * k.width - _tc.horizontal_margin;
+        if (k == _trackpadTriggerKey)
+        {
+          _trackpadTriggerRect.set(x, y, x + keyW, y + keyH);
+        }
         boolean isKeyDown = _pointers.isKeyDown(k);
         boolean isMainKeyDown = _pointers.isMainKeyDown(k);
         Theme.Computed.Key tc_key;
@@ -742,15 +1125,65 @@ public class Keyboard2View extends View
       }
       y += row.height * _tc.row_height;
     }
+    if (_trackpadArmed)
+    {
+      drawTrackpadOverlay(canvas);
+    }
     if (_arcMenu.isActive())
     {
       _arcMenu.draw(canvas, _theme);
     }
   }
 
+  private void drawTrackpadOverlay(Canvas canvas)
+  {
+    canvas.save();
+    if (_trackpadTriggerRect != null && !_trackpadTriggerRect.isEmpty())
+    {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+      {
+        canvas.clipOutRect(_trackpadTriggerRect);
+      }
+      else
+      {
+        canvas.clipRect(_trackpadTriggerRect, Region.Op.DIFFERENCE);
+      }
+    }
+    canvas.drawRect(0, 0, getWidth(), getHeight(), _trackpadDimPaint);
+    canvas.restore();
+
+    if (_trackpadOverlayHandledExternally)
+      return;
+
+    String label = (_trackpadTriggerMode == TRACKPAD_MODE_SELECTION) ? "Виділення" : "Переміщення курсору";
+    int textColor = (_theme != null && _theme.subLabelNumberRowColor != 0)
+        ? _theme.subLabelNumberRowColor
+        : ((_theme != null) ? _theme.subLabelColor : Color.WHITE);
+    _trackpadBadgeTextPaint.setColor(textColor);
+    _trackpadBadgeTextPaint.setTypeface(Typeface.DEFAULT);
+    _trackpadBadgeTextPaint.setFakeBoldText(false);
+    _trackpadBadgeTextPaint.setTextSize(_tc.row_height * 0.28f);
+    float textW = _trackpadBadgeTextPaint.measureText(label);
+    float badgeH = _tc.row_height * 0.44f;
+    float badgeW = textW + badgeH;
+    float cx = getWidth() / 2f;
+    float cy = _tc.margin_top + badgeH * 0.75f;
+    int baseBg = (_theme != null)
+        ? ((_theme.hasKeyboardGradient && _theme.keyboardGradientStart != 0) ? _theme.keyboardGradientStart : _theme.colorKeyboard)
+        : 0xFF181818;
+    if (baseBg == 0) baseBg = 0xFF181818;
+    int badgeBgColor = Color.argb(235, Color.red(baseBg), Color.green(baseBg), Color.blue(baseBg));
+    _trackpadBadgePaint.setColor(badgeBgColor);
+    RectF badgeRect = new RectF(cx - badgeW / 2f, cy - badgeH / 2f, cx + badgeW / 2f, cy + badgeH / 2f);
+    canvas.drawRoundRect(badgeRect, badgeH / 2f, badgeH / 2f, _trackpadBadgePaint);
+    float textY = cy - (_trackpadBadgeTextPaint.descent() + _trackpadBadgeTextPaint.ascent()) / 2f;
+    canvas.drawText(label, cx, textY, _trackpadBadgeTextPaint);
+  }
+
   @Override
   public void onDetachedFromWindow()
   {
+    cancelTrackpadArming();
     super.onDetachedFromWindow();
   }
 

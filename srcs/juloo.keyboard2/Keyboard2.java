@@ -165,6 +165,14 @@ public class Keyboard2 extends InputMethodService
     _keyboard_container_view = (ViewGroup)inflate_view(R.layout.keyboard);
     _keyboard_layout_view = (Keyboard2View)_keyboard_container_view.findViewById(R.id.keyboard_view);
     _candidates_view = (CandidatesView)_keyboard_container_view.findViewById(R.id.candidates_view);
+    _keyboard_layout_view.setTrackpadListener((armed, label, textColor, bgColor) -> {
+      if (_candidates_view != null && _candidates_view.getVisibility() == View.VISIBLE)
+      {
+        _candidates_view.setTrackpadState(armed, label, textColor, bgColor);
+        return true;
+      }
+      return false;
+    });
   }
 
   InputMethodManager get_imm()
@@ -365,6 +373,8 @@ public class Keyboard2 extends InputMethodService
   public void onUpdateSelection(int oldSelStart, int oldSelEnd, int newSelStart, int newSelEnd, int candidatesStart, int candidatesEnd)
   {
     super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd);
+    if (_keyboard_layout_view != null && _keyboard_layout_view.isTrackpadArmed())
+      return;
     _keyeventhandler.selection_updated(oldSelStart, newSelStart, newSelEnd);
     if ((oldSelStart == oldSelEnd) != (newSelStart == newSelEnd))
       _keyboard_layout_view.set_selection_state(newSelStart != newSelEnd);
