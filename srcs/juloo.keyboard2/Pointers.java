@@ -439,7 +439,7 @@ public final class Pointers implements Handler.Callback
     _handler.onPointerFlagsChanged(shouldVibrate);
   }
 
-  boolean isSliding()
+  public boolean isSliding()
   {
     for (Pointer ptr : _ptrs)
       if (ptr.hasFlagsAny(FLAG_P_SLIDING))

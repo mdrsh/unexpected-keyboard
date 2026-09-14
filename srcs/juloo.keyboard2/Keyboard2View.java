@@ -292,10 +292,15 @@ public class Keyboard2View extends View
     return _trackpadArmed;
   }
 
+  public boolean isSliding()
+  {
+    return _pointers != null && _pointers.isSliding();
+  }
+
   /** Called by auto-capitalisation. */
   public void set_shift_state(boolean latched, boolean lock)
   {
-    if (_trackpadArmed)
+    if (_trackpadArmed || isSliding())
       return;
     set_fake_ptr_latched(_shift_key, KeyValue.SHIFT, latched, lock);
   }
@@ -455,7 +460,13 @@ public class Keyboard2View extends View
           }
         }
 
+        boolean wasSliding = _pointers.isSliding();
         _pointers.onTouchUp(upPointerId);
+        if (wasSliding && !_pointers.isSliding())
+        {
+          if (_config != null && _config.handler != null)
+            _config.handler.sync_selection();
+        }
         break;
       case MotionEvent.ACTION_DOWN:
       case MotionEvent.ACTION_POINTER_DOWN:
@@ -783,7 +794,13 @@ public class Keyboard2View extends View
           invalidate();
         }
         cancelTrackpadArming();
+        boolean wasSlidingCancel = _pointers.isSliding();
         _pointers.onTouchCancel();
+        if (wasSlidingCancel && !_pointers.isSliding())
+        {
+          if (_config != null && _config.handler != null)
+            _config.handler.sync_selection();
+        }
         break;
       default:
         return (false);

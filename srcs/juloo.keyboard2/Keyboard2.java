@@ -373,7 +373,7 @@ public class Keyboard2 extends InputMethodService
   public void onUpdateSelection(int oldSelStart, int oldSelEnd, int newSelStart, int newSelEnd, int candidatesStart, int candidatesEnd)
   {
     super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd);
-    if (_keyboard_layout_view != null && _keyboard_layout_view.isTrackpadArmed())
+    if (_keyboard_layout_view != null && (_keyboard_layout_view.isTrackpadArmed() || _keyboard_layout_view.isSliding()))
       return;
     _keyeventhandler.selection_updated(oldSelStart, newSelStart, newSelEnd);
     if ((oldSelStart == oldSelEnd) != (newSelStart == newSelEnd))
