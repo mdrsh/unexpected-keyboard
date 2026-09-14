@@ -215,6 +215,8 @@ public final class Pointers implements Handler.Callback
       if ((ptr.flags & FLAG_P_CLEAR_LATCHED) != 0)
         clearLatched();
       ptr.flags |= FLAG_P_LATCHED;
+      if (ptr.value != null && ptr.value.equals(KeyValue.AUTO_REPLACE_TOGGLE))
+        ptr.flags |= FLAG_P_LOCKED;
       ptr.pointerId = -1;
       _handler.onPointerFlagsChanged(false);
     }

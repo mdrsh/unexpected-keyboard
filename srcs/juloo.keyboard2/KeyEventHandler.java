@@ -3,6 +3,7 @@ package juloo.keyboard2;
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.inputmethod.ExtractedText;
@@ -38,6 +39,18 @@ public final class KeyEventHandler
   LastAction _last_action = null;
   LastAction _next_last_action = null;
 
+  enum SmartAction
+  {
+    NONE,
+    ELLIPSIS,             // ... -> …
+    EM_DASH,              // -- -> —
+    DOUBLE_SPACE_PERIOD,  // " " -> ". "
+    AUTO_SPACE,           // inserted " " before text
+  }
+  SmartAction _last_smart_action = SmartAction.NONE;
+  int _last_auto_space_text_len = 0;
+  long _last_space_time = 0;
+
   public KeyEventHandler(IReceiver recv, Suggestions sg)
   {
     _recv = recv;
@@ -61,6 +74,15 @@ public final class KeyEventHandler
       conf.editor_config.should_move_cursor_force_fallback;
     _space_bar_auto_complete = conf.space_bar_auto_complete;
     _last_action = null;
+    _last_smart_action = SmartAction.NONE;
+    _last_space_time = 0;
+  }
+
+  boolean should_autocapitalise()
+  {
+    return _config != null && _config.autocapitalisation
+        && (_config.editor_config == null || _config.editor_config.auto_space_allowed)
+        && (_mods == null || !_mods.has(KeyValue.Modifier.AUTO_REPLACE_OFF));
   }
 
   /** Selection has been updated. */
@@ -68,6 +90,16 @@ public final class KeyEventHandler
   {
     _autocap.selection_updated(oldSelStart, newSelStart);
     _typedword.selection_updated(oldSelStart, newSelStart, newSelEnd);
+    if (should_autocapitalise())
+    {
+      InputConnection ic = _recv.getCurrentInputConnection();
+      if (ic != null)
+      {
+        CharSequence before = ic.getTextBeforeCursor(60, 0);
+        if (is_at_sentence_start(before))
+          _recv.set_shift_state(true, false);
+      }
+    }
   }
 
   /** A key is being pressed. There will not necessarily be a corresponding
@@ -86,6 +118,10 @@ public final class KeyEventHandler
           case CTRL:
           case ALT:
           case META:
+            _autocap.stop();
+            break;
+          case AUTO_REPLACE_OFF:
+            _recv.set_shift_state(false, false);
             _autocap.stop();
             break;
         }
@@ -116,8 +152,30 @@ public final class KeyEventHandler
       case Char: send_text(String.valueOf(key.getChar())); break;
       case String: send_text(key.getString()); break;
       case Event: _recv.handle_event_key(key.getEvent()); break;
-      case Keyevent: send_key_down_up(key.getKeyevent()); break;
-      case Modifier: break;
+      case Keyevent:
+        _last_smart_action = SmartAction.NONE;
+        _last_space_time = 0;
+        send_key_down_up(key.getKeyevent());
+        break;
+      case Modifier:
+        if (key.getModifier() == KeyValue.Modifier.AUTO_REPLACE_OFF)
+        {
+          if (_mods != null && _mods.has(KeyValue.Modifier.AUTO_REPLACE_OFF))
+          {
+            _recv.set_shift_state(false, false);
+            _autocap.stop();
+          }
+          else
+          {
+            if (should_autocapitalise())
+            {
+              InputConnection ic = _recv.getCurrentInputConnection();
+              if (ic != null && is_at_sentence_start(ic.getTextBeforeCursor(60, 0)))
+                _recv.set_shift_state(true, false);
+            }
+          }
+        }
+        break;
       case Editing: handle_editing_key(key.getEditing()); break;
       case Compose_pending: _recv.set_compose_pending(true); break;
       case Slider: handle_slider(key.getSlider(), key.getSliderRepeat(), false); break;
@@ -137,6 +195,8 @@ public final class KeyEventHandler
   @Override
   public void suggestion_entered(String text)
   {
+    _last_smart_action = SmartAction.NONE;
+    _last_space_time = (text != null && text.endsWith(" ")) ? SystemClock.uptimeMillis() : 0;
     String old = _typedword.get();
     int cur_rel = _typedword.cursor_relative();
     replace_surrounding_text(old.length() + cur_rel, -cur_rel, text);
@@ -245,6 +305,10 @@ public final class KeyEventHandler
     InputConnection conn = _recv.getCurrentInputConnection();
     if (conn == null)
       return;
+    if (eventCode == KeyEvent.KEYCODE_ENTER && eventAction == KeyEvent.ACTION_DOWN)
+    {
+      clean_trailing_space_before_enter();
+    }
     conn.sendKeyEvent(new KeyEvent(1, 1, eventAction, eventCode, 0,
           metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
           KeyEvent.FLAG_SOFT_KEYBOARD | KeyEvent.FLAG_KEEP_TOUCH_MODE));
@@ -257,41 +321,307 @@ public final class KeyEventHandler
 
   void send_text(String text)
   {
+    if (text == null || text.length() == 0)
+      return;
+
+    if (text.equals("\n") || text.startsWith("\n"))
+    {
+      clean_trailing_space_before_enter();
+    }
+
     InputConnection conn = _recv.getCurrentInputConnection();
     if (conn == null)
       return;
-    if (_config != null && _config.shouldDeleteSpaceBeforePunctuation() && should_remove_space_before(conn, text))
+
+    long now = SystemClock.uptimeMillis();
+    CharSequence before = conn.getTextBeforeCursor(60, 0);
+
+    boolean rawMode = _mods != null && _mods.has(KeyValue.Modifier.AUTO_REPLACE_OFF);
+
+    // Bypass all smart replacements, auto-spacing, and autocapitalisation
+    if (rawMode)
+    {
+      _last_smart_action = SmartAction.NONE;
+      _last_space_time = 0;
+      conn.commitText(text, 1);
+      _autocap.typed(text);
+      _typedword.typed(text);
+      _recv.set_shift_state(false, false);
+      return;
+    }
+
+    // Smart Punctuation reverts (4th dot, 3rd hyphen)
+    if (_config != null && _config.shouldApplySmartPunctuation())
+    {
+      if (text.equals(".") && _last_smart_action == SmartAction.ELLIPSIS
+          && ends_with(before, "\u2026"))
+      {
+        replace_surrounding_text(1, 0, "....");
+        _last_smart_action = SmartAction.NONE;
+        _last_space_time = 0;
+        _recv.set_shift_state(false, false);
+        return;
+      }
+      if (text.equals("-") && _last_smart_action == SmartAction.EM_DASH
+          && ends_with(before, "\u2014"))
+      {
+        replace_surrounding_text(1, 0, "---");
+        _last_smart_action = SmartAction.NONE;
+        _last_space_time = 0;
+        _recv.set_shift_state(false, false);
+        return;
+      }
+    }
+
+    // Smart Punctuation replacements (3rd dot -> …, 2nd hyphen -> —)
+    if (_config != null && _config.shouldApplySmartPunctuation())
+    {
+      if (text.equals(".") && ends_with(before, "..") && !ends_with(before, "..."))
+      {
+        replace_surrounding_text(2, 0, "\u2026");
+        _last_smart_action = SmartAction.ELLIPSIS;
+        _last_space_time = 0;
+        _recv.set_shift_state(false, false);
+        return;
+      }
+      if (text.equals("-") && ends_with(before, "-") && !ends_with(before, "--"))
+      {
+        replace_surrounding_text(1, 0, "\u2014");
+        _last_smart_action = SmartAction.EM_DASH;
+        _last_space_time = 0;
+        _recv.set_shift_state(false, false);
+        return;
+      }
+    }
+
+    // Double-space to period (". ")
+    if (_config != null && _config.shouldApplyDoubleSpacePeriod()
+        && text.equals(" ")
+        && _last_space_time > 0 && (now - _last_space_time) < 750
+        && can_trigger_double_space_period(before))
+    {
+      replace_surrounding_text(1, 0, ". ");
+      _last_smart_action = SmartAction.DOUBLE_SPACE_PERIOD;
+      _last_space_time = 0;
+      _recv.set_shift_state(true, false);
+      return;
+    }
+
+    // Track last space time
+    if (text.equals(" "))
+      _last_space_time = now;
+    else
+      _last_space_time = 0;
+
+    // 1. Delete space(s) before punctuation (e.g. "слово ," -> "слово,", "( ок )" -> "(ок)")
+    int spacesBeforePunct = (_config != null && _config.shouldDeleteSpaceBeforePunctuation())
+        ? get_spaces_before_punctuation(before, text) : 0;
+    if (spacesBeforePunct > 0)
     {
       conn.beginBatchEdit();
-      conn.deleteSurroundingText(1, 0);
+      conn.deleteSurroundingText(spacesBeforePunct, 0);
       conn.commitText(text, 1);
-      _typedword.remove_surrounding_text(1, 0);
+      _typedword.remove_surrounding_text(spacesBeforePunct, 0);
       _typedword.typed(text);
-      _autocap.char_deleted();
+      for (int i = 0; i < spacesBeforePunct; i++)
+        _autocap.char_deleted();
       _autocap.typed(text);
       conn.endBatchEdit();
+      update_shift_after_commit(before.subSequence(0, before.length() - spacesBeforePunct), text);
+      _last_smart_action = SmartAction.NONE;
       return;
+    }
+
+    // 2. Delete space(s) after opening bracket (e.g. "(  ок" -> "(ок")
+    int openBracketSpaces = (_config != null && _config.shouldDeleteSpaceBeforePunctuation())
+        ? get_spaces_after_open_bracket(before, text) : 0;
+    if (openBracketSpaces > 0)
+    {
+      CharSequence trimmedBefore = before.subSequence(0, before.length() - openBracketSpaces);
+      if (should_autocapitalise()
+          && Character.isLetter(text.charAt(0))
+          && is_at_sentence_start(trimmedBefore))
+      {
+        text = Character.toUpperCase(text.charAt(0)) + text.substring(1);
+      }
+      conn.beginBatchEdit();
+      conn.deleteSurroundingText(openBracketSpaces, 0);
+      conn.commitText(text, 1);
+      _typedword.remove_surrounding_text(openBracketSpaces, 0);
+      _typedword.typed(text);
+      for (int i = 0; i < openBracketSpaces; i++)
+        _autocap.char_deleted();
+      _autocap.typed(text);
+      conn.endBatchEdit();
+      _recv.set_shift_state(false, false);
+      _last_smart_action = SmartAction.NONE;
+      return;
+    }
+
+    // 3. Auto-space after punctuation before a letter (e.g. "слово,нове" -> "слово, нове")
+    if (_config != null && _config.shouldAutoSpaceAfterPunctuation()
+        && should_insert_space_before(before, text))
+    {
+      if (should_autocapitalise()
+          && is_at_sentence_start_after(before, " "))
+      {
+        text = Character.toUpperCase(text.charAt(0)) + text.substring(1);
+      }
+      conn.beginBatchEdit();
+      conn.commitText(" " + text, 1);
+      _autocap.typed(" ");
+      _typedword.typed(" ");
+      _autocap.typed(text);
+      _typedword.typed(text);
+      conn.endBatchEdit();
+      _recv.set_shift_state(false, false);
+      _last_smart_action = SmartAction.AUTO_SPACE;
+      _last_auto_space_text_len = text.length();
+      return;
+    }
+
+    // 4. Normal text commit with autocapitalisation check at sentence start
+    if (should_autocapitalise()
+        && Character.isLetter(text.charAt(0))
+        && is_at_sentence_start(before))
+    {
+      text = Character.toUpperCase(text.charAt(0)) + text.substring(1);
     }
     _autocap.typed(text);
     _typedword.typed(text);
     conn.commitText(text, 1);
+    update_shift_after_commit(before, text);
+    _last_smart_action = SmartAction.NONE;
   }
 
-  boolean should_remove_space_before(InputConnection conn, String text)
+  void update_shift_after_commit(CharSequence before, String text)
+  {
+    if (!should_autocapitalise())
+      return;
+
+    if (text == null || text.length() == 0)
+      return;
+
+    char last = text.charAt(text.length() - 1);
+    // If a letter was just typed, Shift should turn off
+    if (Character.isLetter(last))
+    {
+      _recv.set_shift_state(false, false);
+      return;
+    }
+
+    // If space was typed: check if preceding text was sentence start
+    if (last == ' ' || last == '\u00A0')
+    {
+      if (is_at_sentence_start_after(before, text))
+        _recv.set_shift_state(true, false);
+      else
+        _recv.set_shift_state(false, false);
+      return;
+    }
+
+    // If newline was typed:
+    if (last == '\n' || last == '\r')
+    {
+      _recv.set_shift_state(true, false);
+      return;
+    }
+
+    // Any other character (punctuation, letters, symbols): Shift turns off
+    _recv.set_shift_state(false, false);
+  }
+
+  int get_spaces_before_punctuation(CharSequence before, String text)
+  {
+    if (text == null || text.length() == 0)
+      return 0;
+    if (!is_space_deleting_punctuation(text.charAt(0)))
+      return 0;
+    if (_typedword.is_selection_not_empty())
+      return 0;
+    if (before == null || before.length() == 0)
+      return 0;
+
+    int len = before.length();
+    int count = 0;
+    while (count < len && (before.charAt(len - 1 - count) == ' ' || before.charAt(len - 1 - count) == '\u00A0'))
+    {
+      count++;
+    }
+    if (count > 0 && len > count && !is_whitespace(before.charAt(len - 1 - count)))
+    {
+      return count;
+    }
+    return 0;
+  }
+
+  int get_spaces_after_open_bracket(CharSequence before, String text)
+  {
+    if (text == null || text.length() == 0 || is_whitespace(text.charAt(0)))
+      return 0;
+    if (_typedword.is_selection_not_empty())
+      return 0;
+    if (before == null || before.length() < 2)
+      return 0;
+
+    int len = before.length();
+    int count = 0;
+    while (count < len && (before.charAt(len - 1 - count) == ' ' || before.charAt(len - 1 - count) == '\u00A0'))
+    {
+      count++;
+    }
+    if (count == 0 || count == len)
+      return 0;
+
+    char prev = before.charAt(len - 1 - count);
+    if (is_opening_bracket(prev))
+      return count;
+
+    return 0;
+  }
+
+  boolean should_insert_space_before(CharSequence before, String text)
   {
     if (text == null || text.length() == 0)
       return false;
-    if (!is_space_deleting_punctuation(text.charAt(0)))
+    if (!Character.isLetter(text.charAt(0)))
       return false;
     if (_typedword.is_selection_not_empty())
       return false;
-    CharSequence before = conn.getTextBeforeCursor(4, 0);
-    if (before == null || before.length() < 2)
+    if (_config != null && _config.editor_config != null && !_config.editor_config.auto_space_allowed)
       return false;
+
+    if (before == null || before.length() == 0)
+      return false;
+
     int len = before.length();
     char last = before.charAt(len - 1);
-    char prev = before.charAt(len - 2);
-    return (last == ' ' || last == '\u00A0') && !Character.isWhitespace(prev) && !Character.isSpaceChar(prev);
+
+    boolean isPunctuation = is_space_following_punctuation(last);
+    if (!isPunctuation && last == '"' && len >= 2)
+    {
+      char prev = before.charAt(len - 2);
+      isPunctuation = !is_whitespace(prev);
+    }
+
+    if (!isPunctuation)
+      return false;
+
+    // Avoid inserting space inside URLs, emails, file paths, code identifiers
+    int start = len - 1;
+    while (start > 0 && !is_whitespace(before.charAt(start - 1)))
+    {
+      start--;
+    }
+    String token = before.subSequence(start, len).toString();
+    if (token.contains("@") || token.contains("/") || token.contains("\\")
+        || token.startsWith("http:") || token.startsWith("https:")
+        || token.startsWith("ftp:") || token.startsWith("www."))
+    {
+      return false;
+    }
+
+    return true;
   }
 
   static boolean is_space_deleting_punctuation(char c)
@@ -305,10 +635,235 @@ public final class KeyEventHandler
       case ':':
       case ';':
       case '\u2026': // …
+      case ')':
+      case ']':
+      case '}':
+      case '»':
+      case '\u201D': // ”
         return true;
       default:
         return false;
     }
+  }
+
+  static boolean is_space_following_punctuation(char c)
+  {
+    switch (c)
+    {
+      case '.':
+      case ',':
+      case '?':
+      case '!':
+      case ':':
+      case ';':
+      case '\u2026': // …
+      case ')':
+      case ']':
+      case '}':
+      case '»':
+      case '\u201D': // ”
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  static boolean is_opening_bracket(char c)
+  {
+    switch (c)
+    {
+      case '(':
+      case '[':
+      case '{':
+      case '«':
+      case '\u201C': // “
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  static boolean is_closing_bracket(char c)
+  {
+    switch (c)
+    {
+      case ')':
+      case ']':
+      case '}':
+      case '»':
+      case '\u201D': // ”
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  static boolean is_horizontal_whitespace(char c)
+  {
+    return c == ' ' || c == '\t' || c == '\u00A0' || Character.isSpaceChar(c);
+  }
+
+  static boolean is_whitespace(char c)
+  {
+    return Character.isWhitespace(c) || Character.isSpaceChar(c);
+  }
+
+  static boolean is_punctuation_or_symbol(char c)
+  {
+    return !Character.isLetterOrDigit(c) && !is_whitespace(c);
+  }
+
+  public void clean_trailing_space_before_enter()
+  {
+    _last_space_time = 0;
+    _last_smart_action = SmartAction.NONE;
+    if (_mods != null && _mods.has(KeyValue.Modifier.AUTO_REPLACE_OFF))
+      return;
+    if (_typedword.is_selection_not_empty())
+      return;
+    InputConnection conn = _recv.getCurrentInputConnection();
+    if (conn == null)
+      return;
+    CharSequence before = conn.getTextBeforeCursor(60, 0);
+    if (before == null || before.length() == 0)
+      return;
+    int len = before.length();
+    int spacesCount = 0;
+    while (spacesCount < len && is_horizontal_whitespace(before.charAt(len - 1 - spacesCount)))
+    {
+      spacesCount++;
+    }
+    if (spacesCount > 0 && spacesCount < len)
+    {
+      char prev = before.charAt(len - 1 - spacesCount);
+      if (is_punctuation_or_symbol(prev))
+      {
+        conn.deleteSurroundingText(spacesCount, 0);
+        _typedword.remove_surrounding_text(spacesCount, 0);
+        for (int i = 0; i < spacesCount; i++)
+          _autocap.char_deleted();
+      }
+    }
+  }
+
+  static boolean is_at_sentence_start(CharSequence before)
+  {
+    if (before == null || before.length() == 0)
+      return true;
+
+    int i = before.length() - 1;
+    int spacesSkipped = 0;
+
+    // 1. Skip trailing horizontal whitespace (spaces, tabs, NBSP)
+    while (i >= 0 && is_horizontal_whitespace(before.charAt(i)))
+    {
+      spacesSkipped++;
+      i--;
+    }
+
+    if (i < 0)
+      return true;
+
+    char c = before.charAt(i);
+
+    // 2. Newline is paragraph start -> sentence start
+    if (c == '\n' || c == '\r')
+      return true;
+
+    // 3. Opening bracket / quote right before cursor (e.g. " ( " or "\n( " or "( ")
+    if (is_opening_bracket(c) || c == '"' || c == '«' || c == '\u201C')
+    {
+      int j = i - 1;
+      while (j >= 0 && is_horizontal_whitespace(before.charAt(j)))
+      {
+        j--;
+      }
+      if (j < 0)
+        return true;
+      char cPrev = before.charAt(j);
+      if (cPrev == '\n' || cPrev == '\r')
+        return true;
+    }
+
+    // 4. Closing bracket / quote (e.g. "word.) " or "word?» ")
+    if (is_closing_bracket(c) || c == '"' || c == '»' || c == '\u201D')
+    {
+      i--;
+      while (i >= 0 && is_horizontal_whitespace(before.charAt(i)))
+      {
+        i--;
+      }
+      if (i < 0)
+        return false;
+      c = before.charAt(i);
+    }
+
+    // 5. Check punctuation marks: MUST be followed by at least one space!
+    // Ellipsis (... or …) does not start a new sentence.
+    if (spacesSkipped > 0)
+    {
+      if (c == '?' || c == '!')
+        return true;
+
+      if (c == '.')
+      {
+        // Ellipsis: check if preceded by another dot (e.g. ".. " or "... ")
+        if (i > 0 && before.charAt(i - 1) == '.')
+          return false;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static boolean is_at_sentence_start_after(CharSequence before, String text)
+  {
+    if (text == null || text.length() == 0)
+      return is_at_sentence_start(before);
+    StringBuilder sb = new StringBuilder();
+    if (before != null)
+      sb.append(before);
+    sb.append(text);
+    return is_at_sentence_start(sb);
+  }
+
+  static boolean ends_with(CharSequence cs, String suffix)
+  {
+    if (cs == null || suffix == null)
+      return false;
+    int csLen = cs.length();
+    int sLen = suffix.length();
+    if (csLen < sLen)
+      return false;
+    for (int i = 0; i < sLen; i++)
+    {
+      if (cs.charAt(csLen - sLen + i) != suffix.charAt(i))
+        return false;
+    }
+    return true;
+  }
+
+  static boolean can_trigger_double_space_period(CharSequence before)
+  {
+    if (before == null || before.length() < 2)
+      return false;
+    int len = before.length();
+    char last = before.charAt(len - 1);
+    if (last != ' ' && last != '\u00A0')
+      return false;
+    char prev = before.charAt(len - 2);
+    if (Character.isLetterOrDigit(prev))
+      return true;
+    if (is_closing_bracket(prev) || prev == '"' || prev == '\'')
+    {
+      if (len >= 3)
+      {
+        char prev2 = before.charAt(len - 3);
+        return Character.isLetterOrDigit(prev2);
+      }
+    }
+    return false;
   }
 
   void replace_surrounding_text(int remove_before, int remove_after,
@@ -322,6 +877,9 @@ public final class KeyEventHandler
     conn.commitText(new_text, 1);
     _typedword.remove_surrounding_text(remove_before, remove_after);
     _typedword.typed(new_text);
+    for (int i = 0; i < remove_before; i++)
+      _autocap.char_deleted();
+    _autocap.typed(new_text);
     conn.endBatchEdit();
   }
 
@@ -355,6 +913,10 @@ public final class KeyEventHandler
       case SELECTION_CANCEL: cancel_selection(); break;
       case SPACE_BAR: handle_space_bar(); break;
       case BACKSPACE: handle_backspace(); break;
+      default:
+        _last_smart_action = SmartAction.NONE;
+        _last_space_time = 0;
+        break;
     }
   }
 
@@ -375,6 +937,8 @@ public final class KeyEventHandler
   /** [r] might be negative, in which case the direction is reversed. */
   void handle_slider(KeyValue.Slider s, int r, boolean key_down)
   {
+    _last_smart_action = SmartAction.NONE;
+    _last_space_time = 0;
     switch (s)
     {
       case Cursor_left: move_cursor(-r); break;
@@ -605,9 +1169,58 @@ public final class KeyEventHandler
       send_text(" ");
   }
 
-  /** Undo the last autocorrect. */
+  /** Undo the last autocorrect or smart action. */
   void handle_backspace()
   {
+    InputConnection conn = _recv.getCurrentInputConnection();
+    _last_space_time = 0;
+
+    if (_last_smart_action != SmartAction.NONE && conn != null)
+    {
+      SmartAction action = _last_smart_action;
+      _last_smart_action = SmartAction.NONE;
+
+      CharSequence before = conn.getTextBeforeCursor(4, 0);
+      switch (action)
+      {
+        case ELLIPSIS:
+          if (ends_with(before, "\u2026"))
+          {
+            replace_surrounding_text(1, 0, "...");
+            return;
+          }
+          break;
+
+        case EM_DASH:
+          if (ends_with(before, "\u2014"))
+          {
+            replace_surrounding_text(1, 0, "--");
+            return;
+          }
+          break;
+
+        case DOUBLE_SPACE_PERIOD:
+          if (ends_with(before, ". "))
+          {
+            replace_surrounding_text(2, 0, "  ");
+            _recv.set_shift_state(false, false);
+            return;
+          }
+          break;
+
+        case AUTO_SPACE:
+          if (before != null && before.length() >= 1 + _last_auto_space_text_len)
+          {
+            replace_surrounding_text(1 + _last_auto_space_text_len, 0, "");
+            return;
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+
     if (_last_action == LastAction.SUGGESTION_ENTERED
         && last_replaced_word != null)
     {
@@ -635,10 +1248,21 @@ public final class KeyEventHandler
     @Override
     public void update_shift_state(boolean should_enable, boolean should_disable)
     {
+      if (_mods != null && _mods.has(KeyValue.Modifier.AUTO_REPLACE_OFF))
+      {
+        _recv.set_shift_state(false, false);
+        return;
+      }
       if (should_enable)
         _recv.set_shift_state(true, false);
       else if (should_disable)
-        _recv.set_shift_state(false, false);
+      {
+        InputConnection ic = _recv.getCurrentInputConnection();
+        if (ic != null && is_at_sentence_start(ic.getTextBeforeCursor(60, 0)))
+          _recv.set_shift_state(true, false);
+        else
+          _recv.set_shift_state(false, false);
+      }
     }
   }
 

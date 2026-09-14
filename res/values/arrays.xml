@@ -166,4 +166,14 @@
     <item>@string/pref_delete_space_before_punctuation_e_always</item>
     <item>@string/pref_delete_space_before_punctuation_e_never</item>
   </string-array>
+  <string-array name="pref_auto_space_after_punctuation_values">
+    <item>mode</item>
+    <item>always</item>
+    <item>never</item>
+  </string-array>
+  <string-array name="pref_auto_space_after_punctuation_entries">
+    <item>@string/pref_auto_space_after_punctuation_e_mode</item>
+    <item>@string/pref_auto_space_after_punctuation_e_always</item>
+    <item>@string/pref_auto_space_after_punctuation_e_never</item>
+  </string-array>
 </resources>

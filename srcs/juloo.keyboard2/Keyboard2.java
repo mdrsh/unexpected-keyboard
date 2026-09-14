@@ -485,6 +485,8 @@ public class Keyboard2 extends InputMethodService
           InputConnection conn = getCurrentInputConnection();
           if (conn != null)
           {
+            if (_keyeventhandler != null)
+              _keyeventhandler.clean_trailing_space_before_enter();
             int actionId = _config.editor_config.actionId;
             if (actionId != EditorInfo.IME_ACTION_UNSPECIFIED && actionId != EditorInfo.IME_ACTION_NONE)
               conn.performEditorAction(actionId);

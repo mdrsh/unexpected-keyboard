@@ -806,6 +806,10 @@ public class Keyboard2View extends View
           return (_theme.lockedColor != 0) ? _theme.lockedColor : 0xFFFFFFFF;
         return (_theme.activatedColor != 0) ? _theme.activatedColor : 0xFFFFFFFF;
       }
+      if (k.equals(KeyValue.AUTO_REPLACE_TOGGLE))
+      {
+        return _theme.hasActionLabelColor ? _theme.actionLabelColor : (_theme.lockedColor != 0 ? _theme.lockedColor : 0xFF00C0FF);
+      }
       return _theme.hasActionLabelColor ? _theme.actionLabelColor : _theme.colorKeyActivated;
     }
     if (isKeyFrameActivated)
@@ -1005,6 +1009,11 @@ public class Keyboard2View extends View
     else
       x += (a == Paint.Align.LEFT) ? subPadding : keyW - subPadding;
     String label = kv.getString();
+    if (kv.equals(KeyValue.AUTO_REPLACE_TOGGLE))
+    {
+      int flags = _pointers.getKeyFlags(kv);
+      label = (flags != -1) ? "✖" : "↺";
+    }
     int label_len = label.length();
     // Limit the label of string keys to 3 characters
     if (label_len > 3 && kv.getKind() == KeyValue.Kind.String)

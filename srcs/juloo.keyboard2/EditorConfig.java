@@ -40,6 +40,8 @@ public final class EditorConfig
   /** Suggestions. */
   // Doesn't override [_config.suggestions_enabled].
   public boolean should_show_candidates_view;
+  /** Whether auto space after punctuation is allowed in this editor. */
+  public boolean auto_space_allowed = true;
 
   public EditorConfig() {}
 
@@ -102,6 +104,8 @@ public final class EditorConfig
     initial_sel_end = info.initialSelEnd;
     /* Suggestions */
     should_show_candidates_view = CandidatesView.should_show(info);
+    /* Auto space after punctuation */
+    auto_space_allowed = _should_allow_auto_space(info);
   }
 
   String actionLabel_of_imeAction(int action, Resources res)
@@ -150,6 +154,27 @@ public final class EditorConfig
         return true;
       default:
         return false;
+    }
+  }
+
+  boolean _should_allow_auto_space(EditorInfo info)
+  {
+    int inputClass = info.inputType & InputType.TYPE_MASK_CLASS;
+    int variation = info.inputType & InputType.TYPE_MASK_VARIATION;
+    if (inputClass != InputType.TYPE_CLASS_TEXT)
+      return false;
+    switch (variation)
+    {
+      case InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS:
+      case InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS:
+      case InputType.TYPE_TEXT_VARIATION_URI:
+      case InputType.TYPE_TEXT_VARIATION_PASSWORD:
+      case InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD:
+      case InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD:
+      case InputType.TYPE_TEXT_VARIATION_FILTER:
+        return false;
+      default:
+        return true;
     }
   }
 }

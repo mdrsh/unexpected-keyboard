@@ -43,6 +43,14 @@
     <string name="pref_delete_space_before_punctuation_e_mode">Залежно від режиму (geek/user)</string>
     <string name="pref_delete_space_before_punctuation_e_always">Завжди увімкнено</string>
     <string name="pref_delete_space_before_punctuation_e_never">Завжди вимкнено</string>
+    <string name="pref_auto_space_after_punctuation_title">Додавати пробіл після пунктуації</string>
+    <string name="pref_auto_space_after_punctuation_e_mode">Залежно від режиму (geek/user)</string>
+    <string name="pref_auto_space_after_punctuation_e_always">Завжди увімкнено</string>
+    <string name="pref_auto_space_after_punctuation_e_never">Завжди вимкнено</string>
+    <string name="pref_smart_punctuation_title">Розумна пунктуація</string>
+    <string name="pref_smart_punctuation_summary">Заміна ... на … та -- на —</string>
+    <string name="pref_double_space_period_title">Крапка подвійним пробілом</string>
+    <string name="pref_double_space_period_summary">Вставляти крапку з пробілом після подвійного натискання пробілу</string>
     <string name="pref_vibrate_custom">Спеціальна вібрація</string>
     <string name="pref_vibrate_duration_title">Інтенсивність вібрації</string>
     <string name="pref_category_style">Стиль</string>

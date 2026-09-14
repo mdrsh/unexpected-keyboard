@@ -55,6 +55,14 @@
     <string name="pref_delete_space_before_punctuation_e_mode">Depending on mode (geek/user)</string>
     <string name="pref_delete_space_before_punctuation_e_always">Always enabled</string>
     <string name="pref_delete_space_before_punctuation_e_never">Always disabled</string>
+    <string name="pref_auto_space_after_punctuation_title">Insert space after punctuation</string>
+    <string name="pref_auto_space_after_punctuation_e_mode">Depending on mode (geek/user)</string>
+    <string name="pref_auto_space_after_punctuation_e_always">Always enabled</string>
+    <string name="pref_auto_space_after_punctuation_e_never">Always disabled</string>
+    <string name="pref_smart_punctuation_title">Smart punctuation</string>
+    <string name="pref_smart_punctuation_summary">Replace ... with … and -- with —</string>
+    <string name="pref_double_space_period_title">Double-space period</string>
+    <string name="pref_double_space_period_summary">Insert a period and space by tapping space twice</string>
     <string name="pref_change_method_key_replacement_title">Switching between input methods</string>
     <string name="pref_change_method_key_replacement_e_picker">Show the input method picker (long press)</string>
     <string name="pref_change_method_key_replacement_e_prev">Switch to last used</string>

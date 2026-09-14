@@ -81,6 +81,18 @@ public final class Config
     }
   }
   public DeleteSpaceMode delete_space_mode = DeleteSpaceMode.MODE;
+  public enum AutoSpaceMode
+  {
+    MODE, ALWAYS, NEVER;
+
+    public static AutoSpaceMode of_string(String s)
+    {
+      if ("always".equals(s)) return ALWAYS;
+      if ("never".equals(s)) return NEVER;
+      return MODE;
+    }
+  }
+  public AutoSpaceMode auto_space_mode = AutoSpaceMode.MODE;
   public KeyValue change_method_key_replacement;
   public NumberLayout selected_number_layout;
   public boolean borderConfig;
@@ -89,6 +101,8 @@ public final class Config
   public int clipboard_history_duration;
   public boolean space_bar_auto_complete;
   public boolean physical_keyboard_hide;
+  public boolean smart_punctuation = true;
+  public boolean double_space_period = true;
 
   // Dynamically set
   /** Configuration options implied by the connected editor. */
@@ -215,6 +229,9 @@ public final class Config
       delete_space_mode = b ? DeleteSpaceMode.MODE : DeleteSpaceMode.NEVER;
       _prefs.edit().putString("delete_space_before_punctuation", delete_space_mode.name().toLowerCase()).apply();
     }
+    auto_space_mode = AutoSpaceMode.of_string(_prefs.getString("auto_space_after_punctuation", "mode"));
+    smart_punctuation = _prefs.getBoolean("smart_punctuation", true);
+    double_space_period = _prefs.getBoolean("double_space_period", true);
     change_method_key_replacement = get_change_method_key_replacement(_prefs);
     extra_keys_param = ExtraKeysPreference.get_extra_keys(_prefs);
     extra_keys_custom = CustomExtraKeysPreference.get(_prefs);
@@ -275,6 +292,37 @@ public final class Config
       default:
         return isUserModeBottomRow;
     }
+  }
+
+  public boolean shouldAutoSpaceAfterPunctuation()
+  {
+    switch (auto_space_mode)
+    {
+      case ALWAYS: return true;
+      case NEVER: return false;
+      case MODE:
+      default:
+        return isUserModeBottomRow;
+    }
+  }
+
+  public boolean shouldApplySmartPunctuation()
+  {
+    return smart_punctuation;
+  }
+
+  public boolean shouldApplyDoubleSpacePeriod()
+  {
+    return double_space_period;
+  }
+
+  public boolean isAnyAutoReplaceEnabled()
+  {
+    return shouldAutoSpaceAfterPunctuation()
+        || shouldDeleteSpaceBeforePunctuation()
+        || shouldApplySmartPunctuation()
+        || shouldApplyDoubleSpacePeriod()
+        || autocapitalisation;
   }
 
   private float get_dip_pref(DisplayMetrics dm, String pref_name, float def)

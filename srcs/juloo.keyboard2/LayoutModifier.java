@@ -248,11 +248,18 @@ public final class LayoutModifier
   static KeyboardData attach_switch_mode_key(KeyboardData kw)
   {
     final KeyValue switchModeKey = KeyValue.bottomRowSwitchKey(globalConfig.isUserModeBottomRow);
+    final boolean enableAutoReplaceToggle = globalConfig.isAnyAutoReplaceEnabled();
     return kw.mapKeys(new KeyboardData.MapKey() {
       public KeyboardData.Key apply(KeyboardData.Key k)
       {
-        if (k.keys[0] != null && k.keys[0].equals(KeyValue.SHIFT) && k.keys[3] == null)
-          return k.withKeyValue(3, switchModeKey);
+        if (k.keys[0] != null && k.keys[0].equals(KeyValue.SHIFT))
+        {
+          if (k.keys[3] == null)
+            k = k.withKeyValue(3, switchModeKey);
+          if (k.keys[4] == null && enableAutoReplaceToggle)
+            k = k.withKeyValue(4, KeyValue.AUTO_REPLACE_TOGGLE);
+          return k;
+        }
         return k;
       }
     });
