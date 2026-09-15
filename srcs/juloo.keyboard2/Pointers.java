@@ -23,6 +23,9 @@ public final class Pointers implements Handler.Callback
   public static final int FLAG_P_CLEAR_LATCHED = (1 << 6);
   /** Can't be locked, even when long pressing. */
   public static final int FLAG_P_CANT_LOCK = (1 << 7);
+  public static final int FLAG_P_WORD_DELETING = (1 << 8);
+
+  private static final int WORD_DELETE_INTERVAL = 300; // ms between word deletes
 
   private Handler _longpress_handler;
   private ArrayList<Pointer> _ptrs = new ArrayList<Pointer>();
@@ -190,6 +193,12 @@ public final class Pointers implements Handler.Callback
       return;
     }
     stopLongPress(ptr);
+    if ((ptr.flags & FLAG_P_WORD_DELETING) != 0)
+    {
+      removePtr(ptr);
+      _handler.onPointerFlagsChanged(false);
+      return;
+    }
     KeyValue ptr_value = ptr.value;
     if (ptr.gesture != null && ptr.gesture.is_in_progress())
     {
@@ -319,7 +328,7 @@ public final class Pointers implements Handler.Callback
   public void onTouchMove(float x, float y, int pointerId)
   {
     Pointer ptr = getPtr(pointerId);
-    if (ptr == null)
+    if (ptr == null || (ptr.flags & FLAG_P_WORD_DELETING) != 0)
       return;
     if (ptr.hasFlagsAny(FLAG_P_SLIDING))
     {
@@ -537,6 +546,14 @@ public final class Pointers implements Handler.Callback
     // Latched key, no key
     if (ptr.hasFlagsAny(FLAG_P_LATCHED) || ptr.value == null)
       return;
+    // Backspace hold: delete word and repeat deleting words
+    if (ptr.value.isBackspace() || (ptr.flags & FLAG_P_WORD_DELETING) != 0)
+    {
+      ptr.flags |= FLAG_P_WORD_DELETING;
+      _handler.onPointerHold(KeyValue.DELETE_WORD, ptr.modifiers);
+      _longpress_handler.sendEmptyMessageDelayed(ptr.timeoutWhat, WORD_DELETE_INTERVAL);
+      return;
+    }
     // Key is long-pressable
     KeyValue kv = KeyModifier.modify_long_press(ptr.value);
     if (!kv.equals(ptr.value))

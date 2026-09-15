@@ -908,7 +908,7 @@ public final class KeyEventHandler
       case REPLACE: send_context_menu_action(android.R.id.replaceText); break;
       case ASSIST: send_context_menu_action(android.R.id.textAssist); break;
       case AUTOFILL: send_context_menu_action(android.R.id.autofill); break;
-      case DELETE_WORD: send_key_down_up(KeyEvent.KEYCODE_DEL, KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON); break;
+      case DELETE_WORD: handle_delete_word(); break;
       case FORWARD_DELETE_WORD: send_key_down_up(KeyEvent.KEYCODE_FORWARD_DEL, KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON); break;
       case SELECTION_CANCEL: cancel_selection(); break;
       case SPACE_BAR: handle_space_bar(); break;
@@ -1308,6 +1308,63 @@ public final class KeyEventHandler
     {
       send_key_down_up(KeyEvent.KEYCODE_DEL);
     }
+  }
+
+  void handle_delete_word()
+  {
+    InputConnection conn = _recv.getCurrentInputConnection();
+    if (conn == null)
+      return;
+    _last_space_time = 0;
+    _last_smart_action = SmartAction.NONE;
+
+    CharSequence selected = conn.getSelectedText(0);
+    if (selected != null && selected.length() > 0)
+    {
+      conn.commitText("", 1);
+      return;
+    }
+
+    CharSequence before = conn.getTextBeforeCursor(128, 0);
+    int toDelete = count_chars_to_delete_word(before);
+    if (toDelete > 0)
+    {
+      conn.deleteSurroundingText(toDelete, 0);
+    }
+    else
+    {
+      send_key_down_up(KeyEvent.KEYCODE_DEL, KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+    }
+  }
+
+  static int count_chars_to_delete_word(CharSequence text)
+  {
+    if (text == null || text.length() == 0)
+      return 0;
+    int len = text.length();
+    int i = len - 1;
+    while (i >= 0 && Character.isWhitespace(text.charAt(i)))
+      i--;
+    if (i < 0)
+      return len;
+    char last = text.charAt(i);
+    if (!Character.isLetterOrDigit(last))
+    {
+      while (i >= 0 && !Character.isWhitespace(text.charAt(i)) && !Character.isLetterOrDigit(text.charAt(i)))
+        i--;
+    }
+    else
+    {
+      while (i >= 0)
+      {
+        char c = text.charAt(i);
+        if (Character.isLetterOrDigit(c) || c == '_' || c == '\'' || c == '\u2019' || c == '\u02BC')
+          i--;
+        else
+          break;
+      }
+    }
+    return len - (i + 1);
   }
 
   public static interface IReceiver extends Suggestions.Callback

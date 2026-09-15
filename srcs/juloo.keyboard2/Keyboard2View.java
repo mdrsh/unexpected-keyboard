@@ -347,6 +347,8 @@ public class Keyboard2View extends View
   {
     _config.handler.key_up(k, mods);
     updateFlags();
+    if (k != null && k.getKind() == KeyValue.Kind.Editing && k.getEditing() == KeyValue.Editing.DELETE_WORD)
+      vibrate();
   }
 
   public void onPointerFlagsChanged(boolean shouldVibrate)

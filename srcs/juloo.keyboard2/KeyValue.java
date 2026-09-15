@@ -250,6 +250,13 @@ public final class KeyValue implements Comparable<KeyValue>
     return (Stateful)_payload;
   }
 
+  public boolean isBackspace()
+  {
+    Kind k = getKind();
+    return (k == Kind.Editing && getEditing() == Editing.BACKSPACE)
+        || (k == Kind.Keyevent && getKeyevent() == KeyEvent.KEYCODE_DEL);
+  }
+
   /* Update the char and the symbol. */
   public KeyValue withChar(char c)
   {
@@ -540,6 +547,7 @@ public final class KeyValue implements Comparable<KeyValue>
 
   /** Keys constants. Keys which are accessed from the application's code. */
   public static final KeyValue ENTER = keyeventKey(0xE00E, KeyEvent.KEYCODE_ENTER, 0);
+  public static final KeyValue DELETE_WORD = editingKey(0xE01B, Editing.DELETE_WORD, 0);
   public static final KeyValue CONFIG = eventKey(0xE004, Event.CONFIG, FLAG_SMALLER_FONT);
   public static final KeyValue SHIFT = modifierKey(0xE00A, Modifier.SHIFT, FLAG_DOUBLE_TAP_LOCK);
   public static final KeyValue COMPOSE = makeComposePending(0xE016, ComposeKeyData.compose, FLAG_SECONDARY);
