@@ -64,9 +64,45 @@ public final class Pointers implements Handler.Callback
 
   public void clear()
   {
-    for (Pointer p : _ptrs)
+    clear(false);
+  }
+
+  public void clear(boolean preserveLocked)
+  {
+    for (int i = _ptrs.size() - 1; i >= 0; i--)
+    {
+      Pointer p = _ptrs.get(i);
+      if (preserveLocked && shouldPreservePointer(p))
+      {
+        stopLongPress(p);
+        p.pointerId = -1;
+        p.gesture = null;
+        p.sliding = null;
+        continue;
+      }
       stopLongPress(p);
-    _ptrs.clear();
+      _ptrs.remove(i);
+    }
+  }
+
+  private boolean shouldPreservePointer(Pointer p)
+  {
+    return p.value != null && p.value.equals(KeyValue.AUTO_REPLACE_TOGGLE);
+  }
+
+  public void onLayoutChanged(KeyboardData newKeyboard)
+  {
+    if (newKeyboard == null)
+      return;
+    for (Pointer p : _ptrs)
+    {
+      if (p.value != null)
+      {
+        KeyboardData.Key newKey = newKeyboard.findKeyWithValue(p.value);
+        if (newKey != null)
+          p.key = newKey;
+      }
+    }
   }
 
   public boolean isKeyDown(KeyboardData.Key k)
@@ -421,9 +457,13 @@ public final class Pointers implements Handler.Callback
     if (v == null)
       return null;
     for (Pointer p : _ptrs)
-      if (p.key == k && p.hasFlagsAny(FLAG_P_LATCHED)
+    {
+      boolean matchKey = (p.key == k) ||
+          (p.value != null && p.value.equals(KeyValue.AUTO_REPLACE_TOGGLE) && v.equals(KeyValue.AUTO_REPLACE_TOGGLE));
+      if (matchKey && p.hasFlagsAny(FLAG_P_LATCHED)
           && p.value != null && p.value.equals(v))
         return p;
+    }
     return null;
   }
 
@@ -671,7 +711,7 @@ public final class Pointers implements Handler.Callback
     /** -1 when latched. */
     public int pointerId;
     /** The Key pressed by this Pointer */
-    public final KeyboardData.Key key;
+    public KeyboardData.Key key;
     /** Gesture state, see [Gesture]. [null] means the pointer has not moved out of the center region. */
     public Gesture gesture;
     /** Selected value with [modifiers] applied. */

@@ -252,7 +252,7 @@ public class Keyboard2 extends InputMethodService
     Drawable bg = _keyboard_container_view.getBackground().mutate();
     bg.setAlpha(_config.keyboardOpacity);
     _keyboard_container_view.setBackground(bg);
-    _keyboard_layout_view.reset();
+    _keyboard_layout_view.reset(true);
     refresh_candidates_view();
   }
 
@@ -384,7 +384,7 @@ public class Keyboard2 extends InputMethodService
   public void onFinishInputView(boolean finishingInput)
   {
     super.onFinishInputView(finishingInput);
-    _keyboard_layout_view.reset();
+    _keyboard_layout_view.reset(true);
   }
 
   @Override

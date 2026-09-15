@@ -253,10 +253,15 @@ public class Keyboard2View extends View
     _shift_key = _keyboard.findKeyWithValue(KeyValue.SHIFT);
     _compose_key = _keyboard.findKeyWithValue(KeyValue.COMPOSE);
     KeyModifier.set_modmap(_keyboard.modmap);
-    reset();
+    reset(true);
   }
 
   public void reset()
+  {
+    reset(false);
+  }
+
+  public void reset(boolean preserveLocked)
   {
     if (_arcMenu.isActive())
       _arcMenu.cancel();
@@ -276,8 +281,10 @@ public class Keyboard2View extends View
     _trackpadTriggerConsumed = false;
     _trackpadPointerId = -1;
     _trackpadActive = false;
-    _mods = Pointers.Modifiers.EMPTY;
-    _pointers.clear();
+    _pointers.clear(preserveLocked);
+    if (preserveLocked && _keyboard != null)
+      _pointers.onLayoutChanged(_keyboard);
+    updateFlags();
     requestLayout();
     invalidate();
   }
@@ -365,7 +372,8 @@ public class Keyboard2View extends View
   private void updateFlags()
   {
     _mods = _pointers.getModifiers();
-    _config.handler.mods_changed(_mods);
+    if (_config != null && _config.handler != null)
+      _config.handler.mods_changed(_mods);
   }
 
   @Override
