@@ -3,9 +3,12 @@ package juloo.keyboard2;
 import android.animation.ValueAnimator;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.graphics.Canvas;
+import android.view.inputmethod.InputConnection;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Paint;
@@ -1679,7 +1682,10 @@ public class Keyboard2View extends View
       case REDO: kv = KV_REDO; break;
       case SELECT_ALL: kv = KV_SELECT_ALL; break;
       case CUT: kv = KV_CUT; break;
+      case CUT_ALL: executeCutAll(); return;
       case COPY: kv = KV_COPY; break;
+      case COPY_WORD: executeCopyWord(); return;
+      case COPY_ALL: executeCopyAll(); return;
       case PASTE: kv = KV_PASTE; break;
       case LANGUAGE_SWITCH: kv = KV_SWITCH_FORWARD; break;
       case CLIPBOARD: kv = KV_SWITCH_CLIPBOARD; break;
@@ -1687,6 +1693,282 @@ public class Keyboard2View extends View
     if (kv != null)
     {
       _config.handler.key_up(kv, Pointers.Modifiers.EMPTY);
+    }
+  }
+
+  private void executeCutAll()
+  {
+    if (_config == null || _config.handler == null)
+      return;
+    InputConnection conn = _config.handler.getCurrentInputConnection();
+    if (conn == null)
+      return;
+    conn.performContextMenuAction(android.R.id.selectAll);
+    postDelayed(new Runnable() {
+      @Override
+      public void run() {
+        InputConnection c = (_config != null && _config.handler != null)
+            ? _config.handler.getCurrentInputConnection() : null;
+        if (c != null)
+          c.performContextMenuAction(android.R.id.cut);
+      }
+    }, 50);
+  }
+
+  private void executeCopyAll()
+  {
+    if (_config == null || _config.handler == null)
+      return;
+    InputConnection conn = _config.handler.getCurrentInputConnection();
+    if (conn == null)
+      return;
+    conn.performContextMenuAction(android.R.id.selectAll);
+    postDelayed(new Runnable() {
+      @Override
+      public void run() {
+        InputConnection c = (_config != null && _config.handler != null)
+            ? _config.handler.getCurrentInputConnection() : null;
+        if (c != null)
+          c.performContextMenuAction(android.R.id.copy);
+      }
+    }, 50);
+  }
+
+  private void executeCopyWord()
+  {
+    if (_config == null || _config.handler == null)
+      return;
+    InputConnection conn = _config.handler.getCurrentInputConnection();
+    if (conn == null)
+      return;
+
+    CharSequence selected = conn.getSelectedText(0);
+    if (selected != null && selected.length() > 0)
+    {
+      CharSequence before = conn.getTextBeforeCursor(256, 0);
+      CharSequence after = conn.getTextAfterCursor(256, 0);
+      String snapped = expandSelectionToWordBoundaries(before, selected, after);
+      if (snapped != null && !snapped.isEmpty())
+        copyToClipboard(snapped);
+      else
+        copyToClipboard(selected.toString());
+      return;
+    }
+
+    CharSequence before = conn.getTextBeforeCursor(256, 0);
+    CharSequence after = conn.getTextAfterCursor(256, 0);
+    String word = extractWordAtCursor(before, after);
+    if (word != null && !word.isEmpty())
+    {
+      copyToClipboard(word);
+    }
+  }
+
+  private void copyToClipboard(String text)
+  {
+    if (text == null || text.isEmpty())
+      return;
+    try
+    {
+      ClipboardManager cm = (ClipboardManager)getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (cm != null)
+      {
+        ClipData clip = ClipData.newPlainText("text", text);
+        cm.setPrimaryClip(clip);
+      }
+    }
+    catch (Exception e)
+    {
+      // ignore
+    }
+  }
+
+  public static String extractWordAtCursor(CharSequence beforeCs, CharSequence afterCs)
+  {
+    String before = (beforeCs != null) ? beforeCs.toString() : "";
+    String after = (afterCs != null) ? afterCs.toString() : "";
+    String fullText = before + after;
+    if (fullText.isEmpty())
+      return null;
+
+    int pos = before.length();
+
+    if (pos >= fullText.length() || Character.isWhitespace(fullText.charAt(pos)))
+    {
+      if (pos > 0 && !Character.isWhitespace(fullText.charAt(pos - 1)))
+      {
+        pos = pos - 1;
+      }
+      else
+      {
+        int back = pos - 1;
+        while (back >= 0 && Character.isWhitespace(fullText.charAt(back)))
+        {
+          if (fullText.charAt(back) == '\n' || fullText.charAt(back) == '\r')
+            break;
+          back--;
+        }
+        if (back >= 0 && !Character.isWhitespace(fullText.charAt(back)))
+        {
+          pos = back;
+        }
+        else
+        {
+          int forward = pos;
+          while (forward < fullText.length() && Character.isWhitespace(fullText.charAt(forward)))
+          {
+            if (fullText.charAt(forward) == '\n' || fullText.charAt(forward) == '\r')
+              break;
+            forward++;
+          }
+          if (forward < fullText.length() && !Character.isWhitespace(fullText.charAt(forward)))
+          {
+            pos = forward;
+          }
+          else
+          {
+            return null;
+          }
+        }
+      }
+    }
+
+    int start = pos;
+    while (start > 0 && !Character.isWhitespace(fullText.charAt(start - 1)))
+    {
+      start--;
+    }
+    int end = pos;
+    while (end < fullText.length() && !Character.isWhitespace(fullText.charAt(end)))
+    {
+      end++;
+    }
+
+    String token = fullText.substring(start, end);
+    return trimWordPunctuation(token);
+  }
+
+  public static String trimWordPunctuation(String token)
+  {
+    if (token == null || token.isEmpty())
+      return token;
+
+    int start = 0;
+    int end = token.length();
+
+    while (start < end && isTrimPunctuation(token.charAt(start)))
+    {
+      start++;
+    }
+    while (end > start && isTrimPunctuation(token.charAt(end - 1)))
+    {
+      end--;
+    }
+
+    if (start >= end)
+    {
+      return token;
+    }
+    return token.substring(start, end);
+  }
+
+  public static String expandSelectionToWordBoundaries(CharSequence beforeCs, CharSequence selectedCs, CharSequence afterCs)
+  {
+    String before = (beforeCs != null) ? beforeCs.toString() : "";
+    String selected = (selectedCs != null) ? selectedCs.toString() : "";
+    String after = (afterCs != null) ? afterCs.toString() : "";
+
+    if (selected.isEmpty())
+      return selected;
+
+    StringBuilder sb = new StringBuilder();
+
+    // 1. Expand left edge into `before` if selection started inside a word
+    int selStart = 0;
+    while (selStart < selected.length() && Character.isWhitespace(selected.charAt(selStart)))
+    {
+      selStart++;
+    }
+
+    if (selStart < selected.length() && isWordChar(selected.charAt(selStart)))
+    {
+      if (!before.isEmpty() && isWordChar(before.charAt(before.length() - 1)))
+      {
+        int b = before.length() - 1;
+        while (b >= 0 && isWordChar(before.charAt(b)))
+        {
+          b--;
+        }
+        sb.append(before.substring(b + 1));
+      }
+    }
+
+    // 2. Append the main selected content
+    sb.append(selected);
+
+    // 3. Expand right edge into `after` if selection ended inside a word
+    int selEnd = selected.length() - 1;
+    while (selEnd >= 0 && Character.isWhitespace(selected.charAt(selEnd)))
+    {
+      selEnd--;
+    }
+
+    if (selEnd >= 0 && isWordChar(selected.charAt(selEnd)))
+    {
+      if (!after.isEmpty() && isWordChar(after.charAt(0)))
+      {
+        int a = 0;
+        while (a < after.length() && isWordChar(after.charAt(a)))
+        {
+          a++;
+        }
+        sb.append(after.substring(0, a));
+      }
+    }
+
+    return trimWordPunctuation(sb.toString());
+  }
+
+  private static boolean isWordChar(char c)
+  {
+    return Character.isLetterOrDigit(c) || c == '_' || c == '\'' || c == '\u2019' || c == '\u02BC';
+  }
+
+  private static boolean isTrimPunctuation(char c)
+  {
+    switch (c)
+    {
+      case '"':
+      case '\'':
+      case '`':
+      case '«':
+      case '»':
+      case '“':
+      case '”':
+      case '‘':
+      case '’':
+      case '„':
+      case '(':
+      case ')':
+      case '[':
+      case ']':
+      case '{':
+      case '}':
+      case '<':
+      case '>':
+      case '.':
+      case ',':
+      case '!':
+      case '?':
+      case ':':
+      case ';':
+      case '…':
+      case '~':
+      case '*':
+      case '^':
+        return true;
+      default:
+        return false;
     }
   }
 }

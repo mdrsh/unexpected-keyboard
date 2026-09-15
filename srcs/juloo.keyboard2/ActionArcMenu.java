@@ -16,7 +16,10 @@ public final class ActionArcMenu
     REDO,
     SELECT_ALL,
     CUT,
+    CUT_ALL,
     COPY,
+    COPY_WORD,
+    COPY_ALL,
     PASTE,
     END,
     LANGUAGE_SWITCH,
@@ -31,6 +34,10 @@ public final class ActionArcMenu
   public static final int SECTOR_COPY = 4;
   public static final int SECTOR_PASTE = 5;
   public static final int SECTOR_END = 6;
+
+  public static final int SUB_C_NONE = 0;
+  public static final int SUB_C_WORD = 1;
+  public static final int SUB_C_ALL = 2;
 
   public static class Sector
   {
@@ -63,6 +70,10 @@ public final class ActionArcMenu
   private boolean _isClipboardInV = false;
   private boolean _visitedOuterZ = false;
   private boolean _isRedoInZ = false;
+  private boolean _visitedOuterX = false;
+  private boolean _isCutAllInX = false;
+  private boolean _visitedOuterC = false;
+  private int _subModeC = SUB_C_NONE;
   private boolean _hapticTickRequested = false;
 
   private int _viewWidth = 0;
@@ -83,24 +94,24 @@ public final class ActionArcMenu
   private Typeface _keyFont = null;
 
   private static final float[] DIVIDER_ANGLES = new float[]{
-    180f, 192f, 216f, 241f, 258f, 303f, 348f, 360f
+    180f, 192f, 216f, 241f, 263f, 305.5f, 348f, 360f
   };
 
   // 7 action sectors strictly above horizontal (180° to 360°):
   // - Sector 0: Home (<), 180° to 192° (12°, 2x thinner, lifted above horizontal)
   // - Sector 1: Undo (Z), 192° to 216° (24°, contains inner Redo Y)
-  // - Sector 2: Select All (A), 216° to 241° (25°, proportionally reduced for C/V)
-  // - Sector 3: Cut (X), 241° to 258° (17°, proportionally reduced for C/V)
-  // - Sector 4: Copy (C), 258° to 303° (45°, shifted counter-clockwise by 12°)
-  // - Sector 5: Paste (V), 303° to 348° (45°, shifted counter-clockwise by 12°, contains inner Clipboard)
+  // - Sector 2: Select All (A), 216° to 241° (25°)
+  // - Sector 3: Cut (X), 241° to 263° (22°, increased by ~30%, contains inner Cut All A)
+  // - Sector 4: Copy (C), 263° to 305.5° (42.5°, contains inner Left W: Copy Word, Right A: Copy All)
+  // - Sector 5: Paste (V), 305.5° to 348° (42.5°, contains inner Clipboard)
   // - Sector 6: End (>), 348° to 360° (12°, 2x thinner, lifted above horizontal)
   private final Sector[] _sectors = new Sector[]{
     new Sector(ActionType.HOME, "|◀", 180f, 12f),
     new Sector(ActionType.UNDO, "Z", 192f, 24f),
     new Sector(ActionType.SELECT_ALL, "A", 216f, 25f),
-    new Sector(ActionType.CUT, "X", 241f, 17f),
-    new Sector(ActionType.COPY, "C", 258f, 45f),
-    new Sector(ActionType.PASTE, "V", 303f, 45f),
+    new Sector(ActionType.CUT, "X", 241f, 22f),
+    new Sector(ActionType.COPY, "C", 263f, 42.5f),
+    new Sector(ActionType.PASTE, "V", 305.5f, 42.5f),
     new Sector(ActionType.END, "▶|", 348f, 12f)
   };
 
@@ -143,6 +154,10 @@ public final class ActionArcMenu
     _isClipboardInV = false;
     _visitedOuterZ = false;
     _isRedoInZ = false;
+    _visitedOuterX = false;
+    _isCutAllInX = false;
+    _visitedOuterC = false;
+    _subModeC = SUB_C_NONE;
     _hapticTickRequested = false;
 
     _density = context.getResources().getDisplayMetrics().density;
@@ -176,6 +191,8 @@ public final class ActionArcMenu
     int prevHovered = _hoveredIndex;
     boolean prevClipboard = _isClipboardInV;
     boolean prevRedo = _isRedoInZ;
+    boolean prevCutAll = _isCutAllInX;
+    int prevSubC = _subModeC;
 
     _hoveredIndex = INDEX_NONE;
 
@@ -191,6 +208,10 @@ public final class ActionArcMenu
       _isClipboardInV = false;
       _visitedOuterZ = false;
       _isRedoInZ = false;
+      _visitedOuterX = false;
+      _isCutAllInX = false;
+      _visitedOuterC = false;
+      _subModeC = SUB_C_NONE;
     }
     else
     {
@@ -244,6 +265,57 @@ public final class ActionArcMenu
           _isRedoInZ = false;
         }
 
+        // Sector X: Outer Cut (X), Inner Cut All (A)
+        if (_hoveredIndex == SECTOR_CUT)
+        {
+          if (dist > _splitRadius)
+          {
+            _visitedOuterX = true;
+            _isCutAllInX = false;
+          }
+          else
+          {
+            if (_visitedOuterX)
+              _isCutAllInX = true;
+            else
+              _isCutAllInX = false;
+          }
+        }
+        else
+        {
+          _visitedOuterX = false;
+          _isCutAllInX = false;
+        }
+
+        // Sector C: Outer Copy (C), Inner Left Copy Word (W), Inner Right Copy All (A)
+        if (_hoveredIndex == SECTOR_COPY)
+        {
+          if (dist > _splitRadius)
+          {
+            _visitedOuterC = true;
+            _subModeC = SUB_C_NONE;
+          }
+          else
+          {
+            if (_visitedOuterC)
+            {
+              if (testAngle < 284.25f)
+                _subModeC = SUB_C_WORD;
+              else
+                _subModeC = SUB_C_ALL;
+            }
+            else
+            {
+              _subModeC = SUB_C_NONE;
+            }
+          }
+        }
+        else
+        {
+          _visitedOuterC = false;
+          _subModeC = SUB_C_NONE;
+        }
+
         // Sector V: Outer Paste (V), Inner Clipboard Manager
         if (_hoveredIndex == SECTOR_PASTE)
         {
@@ -274,13 +346,23 @@ public final class ActionArcMenu
         _isClipboardInV = false;
         _visitedOuterZ = false;
         _isRedoInZ = false;
+        _visitedOuterX = false;
+        _isCutAllInX = false;
+        _visitedOuterC = false;
+        _subModeC = SUB_C_NONE;
       }
     }
 
-    boolean stateChanged = (_hoveredIndex != prevHovered || _isClipboardInV != prevClipboard || _isRedoInZ != prevRedo);
-    // Haptic tick ONLY on activation of the clipboard icon sector or redo sector
+    boolean stateChanged = (_hoveredIndex != prevHovered ||
+                            _isClipboardInV != prevClipboard ||
+                            _isRedoInZ != prevRedo ||
+                            _isCutAllInX != prevCutAll ||
+                            _subModeC != prevSubC);
+    // Haptic tick on activation of any inner subsector or switching between inner subsectors
     if ((_hoveredIndex == SECTOR_PASTE && !prevClipboard && _isClipboardInV) ||
-        (_hoveredIndex == SECTOR_UNDO && !prevRedo && _isRedoInZ))
+        (_hoveredIndex == SECTOR_UNDO && !prevRedo && _isRedoInZ) ||
+        (_hoveredIndex == SECTOR_CUT && !prevCutAll && _isCutAllInX) ||
+        (_hoveredIndex == SECTOR_COPY && _subModeC != SUB_C_NONE && _subModeC != prevSubC))
     {
       _hapticTickRequested = true;
     }
@@ -300,6 +382,19 @@ public final class ActionArcMenu
     {
       action = _isRedoInZ ? ActionType.REDO : ActionType.UNDO;
     }
+    else if (_hoveredIndex == SECTOR_CUT)
+    {
+      action = _isCutAllInX ? ActionType.CUT_ALL : ActionType.CUT;
+    }
+    else if (_hoveredIndex == SECTOR_COPY)
+    {
+      if (_subModeC == SUB_C_WORD)
+        action = ActionType.COPY_WORD;
+      else if (_subModeC == SUB_C_ALL)
+        action = ActionType.COPY_ALL;
+      else
+        action = ActionType.COPY;
+    }
     else if (_hoveredIndex == SECTOR_PASTE)
     {
       action = _isClipboardInV ? ActionType.CLIPBOARD : ActionType.PASTE;
@@ -315,6 +410,10 @@ public final class ActionArcMenu
     _isClipboardInV = false;
     _visitedOuterZ = false;
     _isRedoInZ = false;
+    _visitedOuterX = false;
+    _isCutAllInX = false;
+    _visitedOuterC = false;
+    _subModeC = SUB_C_NONE;
     _hapticTickRequested = false;
     return action;
   }
@@ -327,6 +426,10 @@ public final class ActionArcMenu
     _isClipboardInV = false;
     _visitedOuterZ = false;
     _isRedoInZ = false;
+    _visitedOuterX = false;
+    _isCutAllInX = false;
+    _visitedOuterC = false;
+    _subModeC = SUB_C_NONE;
     _hapticTickRequested = false;
   }
 
@@ -371,16 +474,39 @@ public final class ActionArcMenu
       Sector s = _sectors[_hoveredIndex];
       _sectorPath.reset();
 
-      if ((_hoveredIndex == SECTOR_PASTE && _isClipboardInV) ||
-          (_hoveredIndex == SECTOR_UNDO && _isRedoInZ))
+      if (_hoveredIndex == SECTOR_PASTE && _isClipboardInV)
       {
-        // Highlight only the inner 40% (clipboard manager or redo)
+        // Highlight only the inner 40% (clipboard manager)
         _sectorPath.arcTo(_sectorRectSplit, s.startAngle, s.sweepAngle, true);
         _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
       }
+      else if (_hoveredIndex == SECTOR_UNDO && _isRedoInZ)
+      {
+        // Highlight only the inner 40% (redo)
+        _sectorPath.arcTo(_sectorRectSplit, s.startAngle, s.sweepAngle, true);
+        _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
+      }
+      else if (_hoveredIndex == SECTOR_CUT && _isCutAllInX)
+      {
+        // Highlight only the inner 40% (cut all 'A')
+        _sectorPath.arcTo(_sectorRectSplit, s.startAngle, s.sweepAngle, true);
+        _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
+      }
+      else if (_hoveredIndex == SECTOR_COPY && _subModeC == SUB_C_WORD)
+      {
+        // Highlight inner left subsector: 263° to 284.25° (sweep 21.25°)
+        _sectorPath.arcTo(_sectorRectSplit, 263f, 21.25f, true);
+        _sectorPath.arcTo(_sectorRectInner, 263f + 21.25f, -21.25f, false);
+      }
+      else if (_hoveredIndex == SECTOR_COPY && _subModeC == SUB_C_ALL)
+      {
+        // Highlight inner right subsector: 284.25° to 305.5° (sweep 21.25°)
+        _sectorPath.arcTo(_sectorRectSplit, 284.25f, 21.25f, true);
+        _sectorPath.arcTo(_sectorRectInner, 284.25f + 21.25f, -21.25f, false);
+      }
       else
       {
-        // Highlight entire sector (when moving outward to V / Z, or for other sectors)
+        // Highlight entire sector (when moving outward to V / Z / X / C, or for other sectors)
         _sectorPath.arcTo(_sectorRectOuter, s.startAngle, s.sweepAngle, true);
         _sectorPath.arcTo(_sectorRectInner, s.startAngle + s.sweepAngle, -s.sweepAngle, false);
       }
@@ -407,12 +533,24 @@ public final class ActionArcMenu
       canvas.drawLine(x1, y1, x2, y2, _dividerPaint);
     }
 
-    // 4. Draw sector labels (excluding combo sectors Z and V which are rendered individually below)
+
+    // Inner radial divider between W and A inside Sector C
+    double midCRad = Math.toRadians(284.25);
+    float cosMC = (float)Math.cos(midCRad);
+    float sinMC = (float)Math.sin(midCRad);
+    canvas.drawLine(_centerArcX + _sectorInnerRadius * cosMC,
+                    _centerArcY + _sectorInnerRadius * sinMC,
+                    _centerArcX + _splitRadius * cosMC,
+                    _centerArcY + _splitRadius * sinMC,
+                    _dividerPaint);
+
+    // 4. Draw sector labels (excluding combo sectors Z, X, C, V which are rendered individually below)
     float rLabel = _splitRadius + (_sectorOuterRadius - _splitRadius) * 0.70f;
+    float rInner = _sectorInnerRadius + (_splitRadius - _sectorInnerRadius) * 0.50f;
     _textPaint.setColor(textColor);
     for (int i = 0; i < _sectors.length; i++)
     {
-      if (i == SECTOR_UNDO || i == SECTOR_PASTE)
+      if (i == SECTOR_UNDO || i == SECTOR_CUT || i == SECTOR_COPY || i == SECTOR_PASTE)
         continue;
 
       Sector s = _sectors[i];
@@ -438,22 +576,71 @@ public final class ActionArcMenu
     float sinZ = (float)Math.sin(midRadZ);
 
     // Outer "Z"
-    float rOuterZ = rLabel;
-    float zx = _centerArcX + rOuterZ * cosZ;
-    float zy = _centerArcY + rOuterZ * sinZ;
-
+    float zx = _centerArcX + rLabel * cosZ;
+    float zy = _centerArcY + rLabel * sinZ;
     _textPaint.setTextSize(24f * _density);
     float zTextY = zy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
     canvas.drawText("Z", zx, zTextY, _textPaint);
 
     // Inner "Y"
-    float rInnerZ = _sectorInnerRadius + (_splitRadius - _sectorInnerRadius) * 0.50f;
-    float yx = _centerArcX + rInnerZ * cosZ;
-    float yy = _centerArcY + rInnerZ * sinZ;
-
+    float yx = _centerArcX + rInner * cosZ;
+    float yy = _centerArcY + rInner * sinZ;
     _textPaint.setTextSize(18f * _density);
     float yTextY = yy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
     canvas.drawText("Y", yx, yTextY, _textPaint);
+
+    // Sector X: Outer "X" (Cut) and Inner "A" (Cut All)
+    Sector sx = _sectors[SECTOR_CUT];
+    double midRadX = Math.toRadians(sx.midAngle);
+    float cosX = (float)Math.cos(midRadX);
+    float sinX = (float)Math.sin(midRadX);
+
+    // Outer "X"
+    float xx = _centerArcX + rLabel * cosX;
+    float xy = _centerArcY + rLabel * sinX;
+    _textPaint.setTextSize(24f * _density);
+    float xTextY = xy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("X", xx, xTextY, _textPaint);
+
+    // Inner "A"
+    float ax = _centerArcX + rInner * cosX;
+    float ay = _centerArcY + rInner * sinX;
+    _textPaint.setTextSize(18f * _density);
+    float aTextY = ay - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("A", ax, aTextY, _textPaint);
+
+    // Sector C: Outer "C" (Copy), Inner Left "W" (Copy Word), Inner Right "A" (Copy All)
+    Sector sc = _sectors[SECTOR_COPY];
+    double midRadC = Math.toRadians(sc.midAngle);
+    float cosC = (float)Math.cos(midRadC);
+    float sinC = (float)Math.sin(midRadC);
+
+    // Outer "C"
+    float cx = _centerArcX + rLabel * cosC;
+    float cy = _centerArcY + rLabel * sinC;
+    _textPaint.setTextSize(24f * _density);
+    float cTextY = cy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("C", cx, cTextY, _textPaint);
+
+    // Inner Left "W" (mid angle: 263° + 21.25°/2 = 273.625°)
+    double midRadCW = Math.toRadians(273.625);
+    float cosCW = (float)Math.cos(midRadCW);
+    float sinCW = (float)Math.sin(midRadCW);
+    float wx = _centerArcX + rInner * cosCW;
+    float wy = _centerArcY + rInner * sinCW;
+    _textPaint.setTextSize(18f * _density);
+    float wTextY = wy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("W", wx, wTextY, _textPaint);
+
+    // Inner Right "A" (mid angle: 284.25° + 21.25°/2 = 294.875°)
+    double midRadCA = Math.toRadians(294.875);
+    float cosCA = (float)Math.cos(midRadCA);
+    float sinCA = (float)Math.sin(midRadCA);
+    float cax = _centerArcX + rInner * cosCA;
+    float cay = _centerArcY + rInner * sinCA;
+    _textPaint.setTextSize(18f * _density);
+    float caTextY = cay - (_textPaint.ascent() + _textPaint.descent()) / 2f;
+    canvas.drawText("A", cax, caTextY, _textPaint);
 
     // Sector V: Outer "V" and Inner Clipboard Manager icon
     Sector sv = _sectors[SECTOR_PASTE];
@@ -462,23 +649,19 @@ public final class ActionArcMenu
     float sinV = (float)Math.sin(midRadV);
 
     // Outer "V"
-    float rOuterV = rLabel;
-    float vx = _centerArcX + rOuterV * cosV;
-    float vy = _centerArcY + rOuterV * sinV;
-
+    float vx = _centerArcX + rLabel * cosV;
+    float vy = _centerArcY + rLabel * sinV;
     _textPaint.setTextSize(24f * _density);
     float vTextY = vy - (_textPaint.ascent() + _textPaint.descent()) / 2f;
     canvas.drawText("V", vx, vTextY, _textPaint);
 
     // Inner clipboard icon
-    float rInnerV = _sectorInnerRadius + (_splitRadius - _sectorInnerRadius) * 0.50f;
-    float cx = _centerArcX + rInnerV * cosV;
-    float cy = _centerArcY + rInnerV * sinV;
-
+    float clipX = _centerArcX + rInner * cosV;
+    float clipY = _centerArcY + rInner * sinV;
     _clipboardPaint.setTypeface(_keyFont != null ? _keyFont : Typeface.DEFAULT);
     _clipboardPaint.setTextSize(17f * _density);
     _clipboardPaint.setColor(textColor);
-    float clipTextY = cy - (_clipboardPaint.ascent() + _clipboardPaint.descent()) / 2f;
-    canvas.drawText(_keyFont != null ? "\uE017" : "📋", cx, clipTextY, _clipboardPaint);
+    float clipTextY = clipY - (_clipboardPaint.ascent() + _clipboardPaint.descent()) / 2f;
+    canvas.drawText(_keyFont != null ? "\uE017" : "📋", clipX, clipTextY, _clipboardPaint);
   }
 }

@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.inputmethod.InputConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -433,6 +434,7 @@ public final class Config
     public void suggestion_entered(String text);
     public void move_trackpad(int dx, int dy, boolean select);
     public void sync_selection();
+    public InputConnection getCurrentInputConnection();
   }
 
   /** Config migrations. */

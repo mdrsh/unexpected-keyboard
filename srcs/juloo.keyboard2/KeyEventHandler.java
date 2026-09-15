@@ -1367,6 +1367,11 @@ public final class KeyEventHandler
     return len - (i + 1);
   }
 
+  public InputConnection getCurrentInputConnection()
+  {
+    return _recv != null ? _recv.getCurrentInputConnection() : null;
+  }
+
   public static interface IReceiver extends Suggestions.Callback
   {
     public void handle_event_key(KeyValue.Event ev);
